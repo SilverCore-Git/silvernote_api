@@ -1,0 +1,24 @@
+{
+
+    "PORT": 3000,
+
+    "corsOptions": {
+        "origin": [ "https://www.silvernote.fr", "https://app.silvernote.fr", "http://localhost:5173" ],
+        "methods": ["GET", "POST"],
+        "allowedHeaders": ["Content-Type", "authorization"],
+        "credentials": true
+    },
+
+
+    "news": {
+
+        "active": true,
+
+        "message": "Simplifier vous la tache avec silvernote.", 
+        "title": "Bienvenue sur SilverNote", 
+        "btn": false, 
+        "href": "https://www.silvernote.fr"
+
+    }
+
+}
