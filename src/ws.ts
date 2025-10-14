@@ -1,12 +1,12 @@
 import { Server } from "socket.io";
-import { httpServer } from "./app";
+import { createServer } from 'http';
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import config from './config.json';
 import notes from "./assets/ts/notes";
 import { Note } from "./assets/ts/types";
 
-
+const httpServer = createServer();
 
 const save_note = async (note: Note): Promise<void> => {
   await notes.updateNote({
@@ -202,4 +202,7 @@ io.on("connection", (socket) => {
 console.log("Socket.IO server running...");
 
 
-export { io };
+// Démarrage serveur
+httpServer.listen('3434', () => {
+  console.log(`Serveur WebSocket sur le port 3434`);
+});

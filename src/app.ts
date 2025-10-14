@@ -19,7 +19,7 @@ import money from './routes/money';
 import admin from './routes/admin';
 
 const app = express();
-export const httpServer = createServer(app);
+const httpServer = createServer(app);
 import './ws'; 
 
 // Middlewares
@@ -60,6 +60,6 @@ app.use((req: Request, res: Response) => {
 
 // Démarrage serveur
 httpServer.listen(config.PORT, () => {
-  console.log(`Serveur Express + WebSocket sur le port ${config.PORT}`);
+  console.log(`Serveur Express sur le port ${config.PORT}`);
 });
 
