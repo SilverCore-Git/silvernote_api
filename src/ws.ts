@@ -24,7 +24,7 @@ const get_note = async (uuid: string): Promise<Note | undefined> => {
 const io = new Server(httpServer, {
   cors: { origin: config.corsOptions.origin },
   path: "/socket.io/share",
-  transports: ["websocket"]
+  transports: ["websocket", "polling"]
 });
 
 const docs = new Map<string, { 

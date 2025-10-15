@@ -10,7 +10,7 @@ import tags_db from '../assets/ts/tags';
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 const router = Router();
-const socket = io('http://localhost:3000', { path: "/socket.io/share" });
+const socket = io('http://localhost:3434', { path: "/socket.io/share" });
 socket.on('connect', () => {
   console.log('Connected to ws');
 });
