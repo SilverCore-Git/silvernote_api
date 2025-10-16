@@ -1,4 +1,4 @@
-import { UUID, randomUUID } from 'crypto';
+import { UUID, randomUUID, createHash } from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import OpenAI from "openai";
 import { prompt_system } from '../assets/config/jeremy_ai.json';
@@ -23,13 +23,16 @@ function verify_auth (req: Request, res: Response, next: NextFunction) {
 
     const sk = process.env.SECRET_AI_API_KEY;
     const apiKey = req.headers["authorization"];
-
+    
     if (apiKey && sk && apiKey == sk) {
         next();
         return;
     }
 
-    res.json({ error: true, message: 'Need api key' })
+    res.json({ 
+        error: true, 
+        message: 'Need ai api key'
+    })
     return;
 
 }

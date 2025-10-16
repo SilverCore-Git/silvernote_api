@@ -26,8 +26,8 @@ class Database {
     private async init () {
 
         if (!fs.existsSync(this.db_dir_path)) await fsp.mkdir(this.db_dir_path);
-        if (!fs.existsSync(this.db_users)) await fsp.writeFile(this.db_users, JSON.stringify([], null, 2), 'utf-8');
-        if (!fs.existsSync(this.db_sessions)) await fsp.writeFile(this.db_sessions, JSON.stringify([], null, 2), 'utf-8');
+        if (!fs.existsSync(this.db_users) || !fsp.readFile(this.db_users)) await fsp.writeFile(this.db_users, JSON.stringify([], null, 2), 'utf-8');
+        if (!fs.existsSync(this.db_sessions) || !fsp.readFile(this.db_sessions)) await fsp.writeFile(this.db_sessions, JSON.stringify([], null, 2), 'utf-8');
 
     }
 
