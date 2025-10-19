@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import path from 'path';
 import { createServer } from 'http';
+import { SilverIssueMiddleware, webhook } from './lib/silverissue/';
 import 'dotenv/config';
 
 import pkg from './package.json';
@@ -23,6 +24,7 @@ import './ws';
 
 // Middlewares
 app.use(cors(config.corsOptions));
+app.use(SilverIssueMiddleware);
 app.use(cookieParser(process.env.COOKIE_SIGN_KEY));
 app.use(morgan('dev'));
 app.use(express.json({ limit: "50mb" }));
@@ -44,16 +46,16 @@ app.get('/version', (req, res) => {
   res.json({ v: pkg.version })
 })
 
+app.get('/discord_webhook_test', (req, res) => {
+  if (req.query.mdp === process.env.SECRET_AI_API_KEY) webhook.sendMessage('test de webhook !');
+})
+
 
 // 404
 app.use((req: Request, res: Response) => {
 
   res.status(404).json({ route: req.path, error: 'Route non trouvée' });
 });
-
-
-
-
 
 
 // Démarrage serveur

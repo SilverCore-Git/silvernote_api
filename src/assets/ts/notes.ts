@@ -61,7 +61,7 @@
                 return [];
             } catch (err) {
                 console.error("Erreur lecture fichier :", filePath, err);
-                return [];
+                throw err;
             }
         }
         
