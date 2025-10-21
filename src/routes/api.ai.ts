@@ -74,6 +74,11 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
             return;
         }
 
+        const truncatedNotes = notes.notes.map(note => ({
+            ...note,
+            content: note.content?.slice(0, 1000) + '...'
+        }));
+
         const session: Chat = { 
             uuid: randomUUID(),
             userID: user.id,
@@ -84,7 +89,7 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
             messages: [
                 { 
                     role: "system", 
-                    content: `${prompt_system}. L'utilisateur se nome : ${user.fullName}. Voici les donnés de l'utilisateur en format json : notes: ${JSON.stringify(notes)} tags: ${JSON.stringify(tags)}` 
+                    content: `${prompt_system}. L'utilisateur se nome : ${user.fullName}. Voici les donnés de l'utilisateur en format json : notes: ${JSON.stringify(truncatedNotes)} tags: ${JSON.stringify(tags.tags)}` 
                 }
             ]
         }
@@ -142,8 +147,8 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
             prompt = `Message de l'utilisateur : ${message}`;
         }
         else {
-            const notes = await notes_db.getNoteByUUID(note);
-            prompt = `Note ouverte : ${JSON.stringify(notes)}\n Message de l'utilisateur : ${message}`;
+            const db_note = (await notes_db.getNoteByUUID(note)).note;
+            prompt = `Note ouverte : ${JSON.stringify({ db_note })}\n Message de l'utilisateur : ${message}`;
         }
  
         chat.messages.push({
@@ -153,7 +158,7 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
 
         const stream = await AIclient.chat.completions.create({
             model: "gpt-5-mini",
-            messages: chat.messages,
+            messages: chat.messages.slice(-10),
             stream: true
         });
 
