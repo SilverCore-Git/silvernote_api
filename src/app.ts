@@ -5,6 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import { createServer } from 'http';
 import { SilverIssueMiddleware, webhook } from './lib/silverissue/';
+import AllowedOriginCheck from './middleware/AllowedOriginCheck';
 import 'dotenv/config';
 
 import pkg from './package.json';
@@ -24,6 +25,7 @@ import './ws';
 
 // Middlewares
 app.use(cors(config.corsOptions));
+app.use(AllowedOriginCheck);
 app.use(SilverIssueMiddleware);
 app.use(cookieParser(process.env.COOKIE_SIGN_KEY));
 app.use(morgan('dev'));
