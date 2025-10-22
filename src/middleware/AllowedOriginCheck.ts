@@ -30,8 +30,8 @@ export default function  AllowedOriginCheck (req: Request, res: Response, next: 
             return next();
         }
 
-        res.status(501).json({ error: true, message: 'An error has alive' });
-        return;
+        // res.status(501).json({ error: true, message: 'An error has alive' });
+        // return;
     }
 
     if (!origin || origin && !allowedOrigins.includes(origin)) {

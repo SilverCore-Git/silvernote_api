@@ -5,15 +5,11 @@ import { prompt_system } from '../assets/config/jeremy_ai.json';
 import db from '../assets/ts/database';
 import notes_db from '../assets/ts/notes';
 import * as Y from 'yjs';
-import { io } from 'socket.io-client';
 import tags_db from '../assets/ts/tags';
+import { docs, io } from '../ws';
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 const router = Router();
-const socket = io('http://localhost:3434', { path: "/socket.io/share" });
-socket.on('connect', () => {
-  console.log('Connected to ws');
-});
 
 type Chat = { uuid: UUID, userID: string, data: { notes: any, tags: any }, messages: { role: "system" | "user" | "assistant", content: string  }[] }
 let chats: Chat[]  = [];
@@ -37,20 +33,25 @@ function verify_auth (req: Request, res: Response, next: NextFunction) {
 
 }
 
-function write_on_note({ uuid, content }: { uuid: string; content: string }) {
+export async function write_on_note({ uuid, content }: { uuid: string; content: string }) {
+    try {
+        const roomData = docs.get(uuid);
+        if (!roomData) throw new Error("Document introuvable");
 
-    const ydoc = new Y.Doc();
-    const ytext = ydoc.getText('note');
+        const { ydoc } = roomData;
+        const ytext = ydoc.getText("note");
 
-    socket.emit('join-room', { room: uuid })
+        ytext.insert(0, content, 'SilverAI');
 
-    ytext.delete(0, ytext.length)
-    ytext.insert(0, content)
+        const update = Y.encodeStateAsUpdate(ydoc);
 
-    const update = Y.encodeStateAsUpdate(ydoc)
+        // Envoie directement aux clients connectés
+        io.to(uuid).emit('y-update', update);
 
-    socket.emit('y-update', update)
-
+        console.log(`🧠 AI write request → note: ${uuid} | taille: ${update.length}`);
+    } catch (err) {
+        throw new Error(`Error on editing note with AI: ${err}`);
+    }
 }
 
 
@@ -147,7 +148,10 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
             prompt = `Message de l'utilisateur : ${message}`;
         }
         else {
-            const db_note = (await notes_db.getNoteByUUID(note)).note;
+            let db_note = (await notes_db.getNoteByUUID(note)).note;
+            if (db_note) {
+                db_note = { ...db_note, content: db_note.content.replace(/<img[^>]*>/g, '') }
+            }
             prompt = `Note ouverte : ${JSON.stringify({ db_note })}\n Message de l'utilisateur : ${message}`;
         }
  

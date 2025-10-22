@@ -100,7 +100,7 @@ io.on("connection", (socket) => {
 
     socket.on("y-update", async (update: Uint8Array) => {
       try {
-
+        
         const uint8Array = new Uint8Array(update);
         Y.applyUpdate(ydoc, uint8Array);
         socket.to(room).emit("y-update", uint8Array);
@@ -206,3 +206,8 @@ console.log("Socket.IO server running...");
 httpServer.listen('3434', () => {
   console.log(`Serveur WebSocket sur le port 3434`);
 });
+
+export {
+  docs,
+  io
+}
