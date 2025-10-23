@@ -11,7 +11,7 @@ const httpServer = createServer();
 const save_note = async (note: Note): Promise<void> => {
   await notes.updateNote({
     ...note,
-    updated_at: new Date().getDate()
+    updated_at: new Date().getTime()
   });
 }
 
@@ -50,23 +50,12 @@ io.on("connection", (socket) => {
     if (!docData) {
       const ydoc = new Y.Doc();
       new Y.Text();
-      const ytext = ydoc.getText('note');
 
       const awareness = new awarenessProtocol.Awareness(ydoc);
       const note = await get_note(room);
       
       const title = note?.title || "";
       const icon = note?.icon || "";
-      
-      if (note?.content) {
-        // S'assurer que le document est vide avant d'insérer
-        if (ytext.length > 0) {
-          ytext.delete(0, ytext.length);
-        }
-        ytext.insert(0, note.content);
-        // Force une mise à jour initiale
-        Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydoc));
-      }
 
       const saveNote = async () => {
         const currentDoc = docs.get(room);
@@ -156,6 +145,10 @@ io.on("connection", (socket) => {
 
     });
 
+    socket.on('ai-command', ({ command, content }: { command: string, content: string }) => {
+      socket.to(room).emit('ai-command', { command, content });
+    });
+
     socket.on("disconnect", async () => {
 
       const roomId = Array.from(socket.rooms)[1];
@@ -165,7 +158,7 @@ io.on("connection", (socket) => {
       if (!docData) return;
 
       const { ydoc, saveInterval } = docData;
-      const content = ydoc.getText("note").toString();
+      const content = ydoc.getText("prosemirror").toString();
 
       const note: Note | undefined = await get_note(roomId);
       if (note) {
@@ -206,8 +199,3 @@ console.log("Socket.IO server running...");
 httpServer.listen('3434', () => {
   console.log(`Serveur WebSocket sur le port 3434`);
 });
-
-export {
-  docs,
-  io
-}

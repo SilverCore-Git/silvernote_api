@@ -6,7 +6,7 @@ import db from '../assets/ts/database';
 import notes_db from '../assets/ts/notes';
 import * as Y from 'yjs';
 import tags_db from '../assets/ts/tags';
-import { docs, io } from '../ws';
+import { io } from "socket.io-client";
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 const router = Router();
@@ -34,26 +34,42 @@ function verify_auth (req: Request, res: Response, next: NextFunction) {
 }
 
 export async function write_on_note({ uuid, content }: { uuid: string; content: string }) {
-    try {
-        const roomData = docs.get(uuid);
-        if (!roomData) throw new Error("Document introuvable");
 
-        const { ydoc } = roomData;
-        const ytext = ydoc.getText("note");
+    return new Promise<void>((resolve, reject) => {
+        
+        const socket = io('http://localhost:3434', {
+            path: "/socket.io/share",
+            transports: ["websocket", "polling"],
+            autoConnect: true
+        });
 
-        ytext.insert(0, content, 'SilverAI');
+        socket.on("connect", () => {
+            console.log("IA connected");
+            socket.emit("join-room", { room: uuid });
 
-        const update = Y.encodeStateAsUpdate(ydoc);
+            setTimeout(() => {
+                
+                socket.emit('ai-command', { 
+                    command: 'insertContent', 
+                    content: content 
+                });
+                
+                console.log(`AI sent command to note ${uuid}`);
 
-        // Envoie directement aux clients connectés
-        io.to(uuid).emit('y-update', update);
+                setTimeout(() => {
+                    socket.disconnect();
+                    resolve();
+                }, 200);
 
-        console.log(`🧠 AI write request → note: ${uuid} | taille: ${update.length}`);
-    } catch (err) {
-        throw new Error(`Error on editing note with AI: ${err}`);
-    }
+            }, 100);
+
+        });
+
+        socket.on("connect_error", (err) => reject(err));
+
+    });
+    
 }
-
 
 
 router.post('/create', verify_auth, async (req: Request, res: Response) => {
