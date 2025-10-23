@@ -57,7 +57,6 @@ app.get('/discord_webhook_test', (req, res) => {
 
 // 404
 app.use((req: Request, res: Response) => {
-
   res.status(404).json({ route: req.path, error: 'Route non trouvée' });
 });
 
