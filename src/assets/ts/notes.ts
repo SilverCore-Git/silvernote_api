@@ -1,220 +1,123 @@
-    import fs from "fs";
-    const fsp = fs.promises;
-    import type { Note, Layout } from "./types";
-    import path from "path";
-    import { randomUUID } from "crypto";
+import nodeFetch from 'node-fetch';
+import type { Note } from "./types";
+import { randomUUID } from "crypto";
 
     class Notes {
 
-        private db_dir_path: string;
-
         constructor() {
-            this.db_dir_path = path.join(__dirname, '../../db');
+            this.ping().then(a => a ? console.log('Ping db succesfuly.') : console.error('Error on ping db.'))
         }
 
-        private dbPath(user_id: string) {
-            return path.join(this.db_dir_path, user_id, 'notes');
-        }
+        private ping(): Promise<boolean> {
+            return nodeFetch('https://db.silvernote.fr/ping', {
+                headers: {
+                    "Authorization": process.env.DB_API_SK_1 || "",
+                    "X-API-Key": process.env.DB_API_SK_2 || ""
+                },
+            }).then(res => {
+                if (res) return true;
+                return false;
+            });
+        }  
 
-        private layoutPath(user_id: string) {
-            return path.join(this.dbPath(user_id), 'layout.json');
-        }
-
-        private async init_db(user_id: string) {
-            const basePath = this.dbPath(user_id);
-            const layoutPath = this.layoutPath(user_id);
-            const primary_db = path.join(basePath, '20.json');
-
-            const Layout_data: Layout = {
-                all: 0,
-                file: 1,
-                db: [{ file: '20.json', value: 0, full: false }]
-            };
-
-            if (!fs.existsSync(path.join(this.db_dir_path, user_id))) {
-                await fsp.mkdir(path.join(this.db_dir_path, user_id));
-            }
-
-            if (!fs.existsSync(basePath)) {
-                await fsp.mkdir(basePath);
-            }
-
-            if (!fs.existsSync(layoutPath)) {
-                await fsp.writeFile(layoutPath, JSON.stringify(Layout_data), 'utf-8');
-            }
-
-            if (!fs.existsSync(primary_db)) {
-                await fsp.writeFile(primary_db, JSON.stringify([]), 'utf-8');
-            }
-        }
-
-        private async save(data: Note[], db_path: string) {
-            await fsp.writeFile(db_path, JSON.stringify(data, null, 2), 'utf-8');
-        }
-
-        private async readFileSafe(filePath: string) {
-            try {
-                if (fs.existsSync(filePath)) {
-                    const data = await fsp.readFile(filePath, 'utf-8');
-                    return JSON.parse(data);
+        private async fetch (
+            path: string, 
+            opt
+                : { 
+                    method?: 'POST' | 'GET' | 'DELETE', 
+                    body?: string 
+                } 
+                = {
+                    method: 'GET'
                 }
-                return [];
-            } catch (err) {
-                console.error("Erreur lecture fichier :", filePath, err);
-                throw err;
-            }
+        ): Promise<any>
+        {
+            const res = await nodeFetch('https://db.silvernote.fr/notes' + path, { 
+                ...opt,
+                headers: {
+                    "Authorization": process.env.DB_API_SK_1 || "",
+                    "X-API-Key": process.env.DB_API_SK_2 || "",
+                    "Content-Type": "application/json"
+                },
+            }).then(res => res.json());
+            console.log('/notes' + path + ' :\n' + JSON.stringify(res));
+            return res;
         }
-        
-
 
         public async createNote(note: Note) {
 
             if (!note.user_id) return { error: true, message: "user_id requis" };
             note.uuid = note.uuid || randomUUID();
             note.created_at = note.created_at || Date.now();
+            
+            const res = await this.fetch('/push', {
+                method: 'POST',
+                body: JSON.stringify({ note })
+            })
 
-            await this.init_db(note.user_id);
-
-            const basePath = this.dbPath(note.user_id);
-            const layoutPath = this.layoutPath(note.user_id);
-            const layout = JSON.parse(await fsp.readFile(layoutPath, 'utf-8'));
-
-            // Vérifier si la note existe déjà
-            for (const file of layout.db) {
-                const dbPath = path.join(basePath, file.file);
-                const db: Note[] = await this.readFileSafe(dbPath);
-                if (db.some(n => n.uuid === note.uuid)) {
-                    return { error: true, message: "La note existe déjà", note };
-                }
-            }
-
-            // Trouver un fichier où ajouter
-            for (const file of layout.db) {
-                if (!file.full) {
-                    const dbPath = path.join(basePath, file.file);
-                    const db: Note[] = await this.readFileSafe(dbPath);
-                    db.push(note);
-                    file.value++;
-                    file.full = file.value >= 20;
-                    layout.all++;
-                    await this.save(db, dbPath);
-                    await this.save(layout, layoutPath);
-                    return { success: true, note };
-                }
-            }
-
-            // Sinon créer un nouveau fichier
-            const newFile = `${layout.db.length + 20}.json`;
-            const dbPath = path.join(basePath, newFile);
-            await this.save([note], dbPath);
-            layout.db.push({ file: newFile, value: 1, full: false });
-            layout.all++;
-            await this.save(layout, layoutPath);
-
-            return { success: true, note };
+            return { success: res._id ? true : false, note };
             
         }
 
 
         public async getNoteByUUID(uuid: string) {
-            const users = await fsp.readdir(this.db_dir_path);
-            for (const user of users) {
-                const basePath = this.dbPath(user);
-                const layoutPath = this.layoutPath(user);
-                if (!fs.existsSync(layoutPath)) continue;
 
-                const layout = JSON.parse(await fsp.readFile(layoutPath, 'utf-8'));
-                for (const file of layout.db) {
-                    const dbPath = path.join(basePath, file.file);
-                    const notes: Note[] = await this.readFileSafe(dbPath);
-                    const found = notes.find(n => n.uuid === uuid);
-                    if (found) return { success: true, note: found };
-                }
+            const res: Note[] = await this.fetch(`/get/${uuid}`);
+
+            const note: Note = res[0];
+
+            if (note && note.uuid) 
+            {
+                return { success: true, note };
             }
-            return { error: true, message: "Note introuvable" };
+            else return { error: true, message: "Note introuvable" };
+
         }
 
         public async getNoteByUserId(user_id: string) {
-            await this.init_db(user_id);
-            const basePath = this.dbPath(user_id);
-            const layout = JSON.parse(await fsp.readFile(this.layoutPath(user_id), 'utf-8'));
 
-            let allNotes: Note[] = [];
-            for (const file of layout.db) {
-                const dbPath = path.join(basePath, file.file);
-                const notes: Note[] = await this.readFileSafe(dbPath);
-                allNotes = allNotes.concat(notes);
-            }
+            const notes: Note[] = await this.fetch(`/get/byuserid/${user_id}`);
 
-            return { success: true, notes: allNotes };
+            return { success: true, notes };
+
         }
 
         public async updateNote(note: Note) {
-            if (!note.uuid || !note.user_id) return { error: true, message: "uuid et user_id requis" };
 
-            await this.init_db(note.user_id);
-            const basePath = this.dbPath(note.user_id);
-            const layout = JSON.parse(await fsp.readFile(this.layoutPath(note.user_id), 'utf-8'));
+            if (!note.uuid || !note.user_id) {
+                return { error: true, message: "uuid et user_id requis" };
+            }
+            
+            const res = await this.fetch('/update', {
+                method: "POST",
+                body: JSON.stringify({ note })
+            });
 
-            for (const file of layout.db) {
-                const dbPath = path.join(basePath, file.file);
-                let notes: Note[] = await this.readFileSafe(dbPath);
-
-                const index = notes.findIndex(n => n.uuid === note.uuid);
-                if (index !== -1) {
-                    notes[index] = { ...notes[index], ...note };
-                    await this.save(notes, dbPath);
-                    return { success: true, note: notes[index] };
-                }
+            if (res.error) {
+                return { error: true, message: "erreur", res };
             }
 
-            return { error: true, message: "Note introuvable" };
+            if (res.uuid) {
+                return { success: true, note };
+            }
+            
+            return { error: true, message: "réponse inattendue", res };
         }
 
         public async clearUserNotes(user_id: string) {
-            await this.init_db(user_id);
-            const basePath = this.dbPath(user_id);
-            const layoutPath = this.layoutPath(user_id);
-
-            const layout: Layout = JSON.parse(await fsp.readFile(layoutPath, 'utf-8'));
-
-            for (const file of layout.db) {
-                const dbPath = path.join(basePath, file.file);
-                await this.save([], dbPath); // correct, tableau de notes
-                file.value = 0;
-                file.full = false;
-            }
-
-            layout.all = 0;
-            await fsp.writeFile(layoutPath, JSON.stringify(layout, null, 2), 'utf-8'); // layout sauvegardé correctement
+            await this.fetch('/delete/byuserid/' + user_id, {
+                method: 'DELETE'
+            })
             return { success: true };
         }
 
         public async deleteNoteByUUID(user_id: string, uuid: string) {
-            await this.init_db(user_id);
-            const basePath = this.dbPath(user_id);
-            const layoutPath = this.layoutPath(user_id);
+            
+            const res = await this.fetch('/delete/' + uuid, {
+                method: "DELETE"
+            })
 
-            const layout: Layout = JSON.parse(await fsp.readFile(layoutPath, 'utf-8'));
-            let deleted = false;
-
-            for (const file of layout.db) {
-                const dbPath = path.join(basePath, file.file);
-                let notes: Note[] = await this.readFileSafe(dbPath);
-                const initialLength = notes.length;
-                notes = notes.filter(n => n.uuid !== uuid);
-                if (notes.length < initialLength) {
-                    deleted = true;
-                    file.value = notes.length;
-                    file.full = notes.length >= 20;
-                    await this.save(notes, dbPath); // correct, tableau de notes
-                }
-            }
-
-            layout.all = layout.db.reduce((acc, f) => acc + f.value, 0);
-            await fsp.writeFile(layoutPath, JSON.stringify(layout, null, 2), 'utf-8'); // layout sauvegardé correctement
-
-            if (deleted) return { success: true };
+            if (res.success) return { success: true };
             return { error: true, message: "Note introuvable" };
         }
 
