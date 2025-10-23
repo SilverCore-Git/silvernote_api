@@ -109,7 +109,7 @@ router.post('/update/a/tag', async (req: Request, res: Response) => {
 });
 
 router.post('/delete/a/tag', async (req: Request, res: Response) => {
-    res.json(await tag_db.deleteTagByID(req.cookies.user_id, Number(req.query.id)));
+    res.json(await tag_db.deleteTagByUUID(req.cookies.user_id, String(req.query.uuid)));
 });
 
 router.get('/get/user/tags', async (req: Request, res: Response) => {
