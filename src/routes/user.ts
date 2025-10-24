@@ -39,11 +39,15 @@ router.post('/plan/set', async (req: Request, res: Response) => {
 
 router.get('/plan/get', async (req: Request, res: Response) => {
 
-  const userId = req.body.userId;
+  const userId = String(req.query.userId);
+  if (!userId) {
+    res.status(403).json({ error: true, message: 'Missing query' })
+    return;
+  }
 
   const user: User | null = await db.get_user(userId);
   if (!user) {
-    res.status(403).json({ error: true, message: 'User not found' });
+    res.status(503).json({ error: true, message: 'User not found' });
     return;
   }
 
