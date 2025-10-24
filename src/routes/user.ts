@@ -1,9 +1,11 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 const router = express.Router();
 
 import db from '../assets/ts/database';
-import { User } from '@clerk/express';
+import { Benefits, get_benefits_by_planId, get_silver_plan, type Plan } from '../assets/ts/plan';
+import { User } from '../assets/ts/types';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -33,6 +35,50 @@ router.post('/plan/set', async (req: Request, res: Response) => {
   res.json(true);
 
 })
+
+
+router.get('/plan/get', async (req: Request, res: Response) => {
+
+  const userId = req.body.userId;
+
+  const user: User | null = await db.get_user(userId);
+  if (!user) {
+    res.status(403).json({ error: true, message: 'User not found' });
+    return;
+  }
+
+  const plans: Plan[] = user.plan;
+
+  const subscriptions = await stripe.subscriptions.list({
+      customer: user.customerId,
+      status: 'active',
+      expand: ["data.default_payment_method"],
+      limit: 1,
+  });
+
+  const stripPlan = subscriptions.data[0];
+  if (!stripPlan) {
+    res.json(get_silver_plan());
+    return;
+  }
+
+  const plan: Plan | undefined = plans.find(plan => plan.sub_id == stripPlan.id);
+  if (!plan) return;
+  const benefits: Benefits | undefined = get_benefits_by_planId(plan.uuid);
+  if (!benefits) return;
+
+  res.cookie('_sub', plan.sub_id, {
+      httpOnly: true,
+      secure: true,
+  });
+
+  res.json({
+    ...plan,
+    benefits
+  });
+
+})
+
 
 // route de création de session
 router.post('/session/create', async (req: Request, res: Response) => {
@@ -139,7 +185,7 @@ router.get('/stripe/portal/for/:id', async (req: Request, res: Response) => {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: 'http://localhost:5173/user/profile',
+    return_url: 'https://www.silvernote.fr/user/profile',
   });
 
   if (req.query.redirect == '1') return res.redirect(session.url);
@@ -182,7 +228,7 @@ async function createStripeCustomer(user: {
 
 router.post('/create', async (req: Request, res: Response) => {
 
-  const user: User = req.body.user;
+  const user = req.body.user;
 
   if (!await db.exist_user(user.id)) {
 
