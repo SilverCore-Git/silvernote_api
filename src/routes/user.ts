@@ -51,35 +51,47 @@ router.get('/plan/get', async (req: Request, res: Response) => {
     return;
   }
 
-  const plans: Plan[] = user.plan;
+  try {
 
-  const subscriptions = await stripe.subscriptions.list({
-      customer: user.customerId,
-      status: 'active',
-      expand: ["data.default_payment_method"],
-      limit: 1,
-  });
+    const plans: Plan[] = user.plan;
 
-  const stripPlan = subscriptions.data[0];
-  if (!stripPlan) {
-    res.json(get_silver_plan());
-    return;
+    if (plans[0].uuid == 'e9009da1-e1e6-448d-b264-353ba8c0a850') {
+      res.json(get_silver_plan());
+      return;
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+        customer: user.customerId,
+        status: 'active',
+        expand: ["data.default_payment_method"],
+        limit: 1,
+    });
+
+    const stripPlan = subscriptions.data[0];
+    if (!stripPlan) {
+      res.json(get_silver_plan());
+      return;
+    }
+    
+    const plan: Plan | undefined = plans.find(plan => plan.sub_id == stripPlan.id);
+    if (!plan) throw Error('Plan was undefined');
+    const benefits: Benefits | undefined = get_benefits_by_planId(plan.uuid);
+    if (!benefits) throw Error('Benefits was undefined');
+    
+    res.cookie('_sub', plan.sub_id, {
+        httpOnly: true,
+        secure: true,
+    });
+
+    res.json({
+      ...plan,
+      benefits
+    });
+
   }
-
-  const plan: Plan | undefined = plans.find(plan => plan.sub_id == stripPlan.id);
-  if (!plan) return;
-  const benefits: Benefits | undefined = get_benefits_by_planId(plan.uuid);
-  if (!benefits) return;
-
-  res.cookie('_sub', plan.sub_id, {
-      httpOnly: true,
-      secure: true,
-  });
-
-  res.json({
-    ...plan,
-    benefits
-  });
+  catch(err) {
+    throw new Error(`An error ocured on user/plan/get : ${err}`);
+  }
 
 })
 

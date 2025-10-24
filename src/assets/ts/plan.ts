@@ -93,7 +93,10 @@ const plans: Plan[] = [
 
 
 export const get_silver_plan = (): Plan => {
-    return plans.filter(plan => plan.name == 'silver')[0];
+    return {
+        ...plans.filter(plan => plan.uuid == 'e9009da1-e1e6-448d-b264-353ba8c0a850')[0],
+        benefits: get_benefits_by_planId('e9009da1-e1e6-448d-b264-353ba8c0a850')
+    }
 } 
 
 export function get_benefits_by_planId (planId: UUID): Benefits | undefined
