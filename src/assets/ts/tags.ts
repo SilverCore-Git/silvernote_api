@@ -40,7 +40,7 @@ import { randomUUID } from "crypto";
                     "Content-Type": "application/json"
                 },
             }).then(res => res.json());
-            console.log('/tags' + path + ' :\n' + JSON.stringify(res));
+            //console.log('/tags' + path + ' :\n' + JSON.stringify(res));
             return res;
         }
 
