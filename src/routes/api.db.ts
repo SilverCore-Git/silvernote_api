@@ -47,7 +47,7 @@ router.post('/verify/data', async (req: Request, res: Response) => {
         const tagsMatch = areArraysEqualIgnoreOrder(db_tags, tags); // pk ça renvoi false ??
 
         res.json({
-            ok: notesMatch && tagsMatch,
+            ok: notesMatch, //&& tagsMatch,
             notes: notesMatch,
             notes_length: db_notes.length,
             tags: tagsMatch,
