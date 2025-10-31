@@ -6,6 +6,7 @@ import path from 'path';
 import { createServer } from 'http';
 import { SilverIssueMiddleware, webhook } from './lib/silverissue/';
 import AllowedOriginCheck from './middleware/AllowedOriginCheck';
+import { clerkMiddleware, requireAuth } from '@clerk/express';
 import 'dotenv/config';
 
 import pkg from './package.json';
@@ -31,18 +32,20 @@ app.use(morgan('dev'));
 app.use(AllowedOriginCheck);
 app.use(SilverIssueMiddleware);
 
-app.use(express.json({ limit: "50mb" }));
+app.use(clerkMiddleware());
+
+app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Routes
-app.use('/api', api);
-app.use('/api/ai', api_ai);
-app.use('/api/db', api_db);
-app.use('/user', user);
-app.use('/admin', admin);
-app.use('/money', money);
+app.use('/api', requireAuth(), api);
+app.use('/api/ai', requireAuth(), api_ai);
+app.use('/api/db', requireAuth(), api_db);
+app.use('/user', requireAuth(), user);
+app.use('/admin', requireAuth(), admin);
+app.use('/money', requireAuth(), money);
 
 
 

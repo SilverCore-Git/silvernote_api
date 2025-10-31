@@ -4,7 +4,6 @@ import OpenAI from "openai";
 import { prompt_system } from '../assets/config/jeremy_ai.json';
 import db from '../assets/ts/database';
 import notes_db from '../assets/ts/notes';
-import * as Y from 'yjs';
 import tags_db from '../assets/ts/tags';
 import { io } from "socket.io-client";
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
