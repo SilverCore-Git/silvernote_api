@@ -106,12 +106,6 @@ io.on("connection", (socket) => {
         if (currentDoc) {
           currentDoc.title = update;
           socket.to(room).emit("title-update", update);
-
-          const currentNote = await get_note(room);
-          await save_note({
-              ...currentNote!,
-              title: update
-          });
         }
       } catch (error) {
         console.error("Error applying update:", error);
@@ -143,10 +137,6 @@ io.on("connection", (socket) => {
         console.error("Error applying awareness update:", error);
       }
 
-    });
-
-    socket.on('ai-command', ({ command, content }: { command: string, content: string }) => {
-      socket.to(room).emit('ai-command', { command, content });
     });
 
     socket.on("disconnect", async () => {

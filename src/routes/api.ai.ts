@@ -36,36 +36,6 @@ function verify_auth(req: Request, res: Response, next: NextFunction) {
     });
 }
 
-export async function write_on_note({ uuid, content }: { uuid: string; content: string }) {
-    return new Promise<void>((resolve, reject) => {
-        const socket = io('http://localhost:3434', {
-            path: "/socket.io/share",
-            transports: ["websocket", "polling"],
-            autoConnect: true
-        });
-
-        socket.on("connect", () => {
-            console.log("IA connected");
-            socket.emit("join-room", { room: uuid });
-
-            setTimeout(() => {
-                socket.emit('ai-command', { 
-                    command: 'insertContent', 
-                    content: content 
-                });
-                
-                console.log(`AI sent command to note ${uuid}`);
-
-                setTimeout(() => {
-                    socket.disconnect();
-                    resolve();
-                }, 200);
-            }, 100);
-        });
-
-        socket.on("connect_error", (err) => reject(err));
-    });
-}
 
 router.post('/create', verify_auth, async (req: Request, res: Response) => {
     const { user } = req.body;
@@ -192,7 +162,7 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
 
             // Appel à OpenAI avec les outils MCP
             const stream = await AIclient.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: "gpt-5-mini",
                 messages: conversationMessages,
                 tools: mcpTools.length > 0 ? mcpTools : undefined,
                 tool_choice: 'auto',
@@ -212,27 +182,7 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
                     const token = delta.content;
                     assistantMessage += token;
                     buffer += token;
-
-                    const itsJSON = buffer.trim().startsWith('{');
-
-                    if (itsJSON) {
-                        try {
-                            const jsonAction = JSON.parse(buffer);
-                            res.write(`data: ${JSON.stringify(jsonAction.response).replace('"', '')}\n\n`);
-                            
-                            if (jsonAction.action == "edit.note.content") {
-                                console.log('editing note : ', jsonAction.uuid);
-                                write_on_note({
-                                    uuid: jsonAction.uuid,
-                                    content: jsonAction.content
-                                });
-                            }
-                            
-                            buffer = "";
-                        } catch (e) {}
-                    } else {
-                        res.write(`data: ${token}\n\n`);
-                    }
+                    res.write(`data: ${token}\n\n`);
                 }
 
                 // Gérer les appels d'outils
