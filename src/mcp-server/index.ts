@@ -2,7 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const USER_AGENT = "silvernote-mcp/1.0";
+
+// import tools
+import edit_note_content from "./assets/tools/edit_note_content";
+import edit_note_title from "./assets/tools/edit_note_title";
+import edit_note_icon from "./assets/tools/edit_note_icon";
+
 
 // Create server instance
 const server = new McpServer({
@@ -14,25 +19,71 @@ const server = new McpServer({
   },
 });
 
+
+
+// edit a note => content
 server.tool(
-  "name",
-  "desciption",
+  "edit_note_content",
+  "editing content of a note",
   {
-    parm1: z.string().length(10).describe('parm 1 for ai ask'),
-    parm2: z.string().length(10).describe('parm 2 for ai ask'),
+    uuid: z.string().describe('note uuid'),
+    content: z.string().describe('the content to insert on the note'),
+    line: z.number().describe('the line where the content will be inserted')
   },
-  ({ parm1, parm2 }) => {
-    // function of the tool
+  async (parms) => {
+    const res = await edit_note_content(parms);
     return {
       content: [
         {
           type: "text",
-          text: "data",
+          text: res.message,
         },
       ],
     };
   }
 )
+
+server.tool(
+  "edit_note_title",
+  "editing icon of a note",
+  {
+    uuid: z.string().describe('note uuid'),
+    title: z.string().describe('new title of the note'),
+  },
+  async (parms) => {
+    const res = await edit_note_title(parms);
+    return {
+      content: [
+        {
+          type: "text",
+          text: res.message,
+        },
+      ],
+    };
+  }
+)
+
+server.tool(
+  "edit_note_icon",
+  "editing icon of a note",
+  {
+    uuid: z.string().describe('note uuid'),
+    icon: z.string().describe('new icon of the note'),
+  },
+  async (parms) => {
+    const res = await edit_note_icon(parms);
+    return {
+      content: [
+        {
+          type: "text",
+          text: res.message,
+        },
+      ],
+    };
+  }
+)
+
+
 
 async function main() {
   const transport = new StdioServerTransport();
