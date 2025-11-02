@@ -21,34 +21,47 @@ class useWS
     (p: { command: Cmd, room: string }, parms: any)
     {
 
-        return new Promise<void>((resolve, reject) => {
+        try {
 
-            const socket = this.getSocket();
+            return new Promise<void>((resolve, reject) => {
 
-            socket.emit('join-room', { room: p.room })
-            console.log("IA connected");
+                const socket = this.getSocket();
 
-            if (p.command === "set-title") 
-            {
-                socket.emit('title-update', parms.newTitle);
-            }
+                socket.on('connect', () => {
 
-            if (p.command === "set-icon") 
-            {
-                socket.emit('icon-update', parms.newIcon);
-            }
+                    socket.emit('join-room', { room: p.room })
+                    console.log("IA connected");
 
-            if (p.command === 'insert-content')
-            {
-                // a faire
-            }
-            
+                    if (p.command === "set-title") 
+                    {
+                        socket.emit('title-update', parms.newTitle);
+                    }
 
-            socket.disconnect();
-            resolve();
-            return;
+                    if (p.command === "set-icon") 
+                    {
+                        socket.emit('icon-update', parms.newIcon);
+                    }
 
-        })
+                    if (p.command === 'insert-content')
+                    {
+                        // a faire
+                    }
+
+                })
+               
+
+                setTimeout(() => {
+                    socket.disconnect();
+                    resolve();
+                    return;
+                }, 300);
+
+            })
+
+        }
+        catch (err) {
+            throw new Error(`An error occured on useWS : ${err}`);
+        }
 
     }
 

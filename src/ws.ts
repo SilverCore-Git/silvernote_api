@@ -106,6 +106,7 @@ io.on("connection", (socket) => {
         if (currentDoc) {
           currentDoc.title = update;
           socket.to(room).emit("title-update", update);
+          console.log('title update : ', update)
         }
       } catch (error) {
         console.error("Error applying update:", error);
