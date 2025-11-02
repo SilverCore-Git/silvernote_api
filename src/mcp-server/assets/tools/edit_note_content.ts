@@ -1,16 +1,19 @@
 import useWS from "../useWS";
 
 export default async function edit_note_content
-(parms: { uuid: string, content: string, line: number })
+(parms: { uuid: string, content: string, pos: number })
 {
     const ws = new useWS();
 
     await ws.command(
         {
-            command: 'set-icon',
+            command: 'insert-content',
             room: parms.uuid
         },
-        parms
+        {
+            ...parms,
+            replace: false
+        }
     )
 
     return {
