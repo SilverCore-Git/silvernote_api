@@ -41,7 +41,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Routes
-app.use('/api',  api); //requireAuth(),
+app.use('/api', api); //requireAuth(),
 app.use('/api/ai',  api_ai); //requireAuth(),
 app.use('/api/db',  api_db); //requireAuth(),
 app.use('/user',  user); //requireAuth(),

@@ -5,7 +5,6 @@ import { prompt_system } from '../assets/config/jeremy_ai.json';
 import db from '../assets/ts/database';
 import notes_db from '../assets/ts/notes';
 import tags_db from '../assets/ts/tags';
-import { io } from "socket.io-client";
 import { getMCPService } from '../mcp';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 

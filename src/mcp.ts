@@ -20,9 +20,6 @@ export class MCPService {
 
     constructor() {}
 
-    /**
-     * Se connecter au serveur MCP
-     */
     async connect() {
         if (this.client) {
             return;
@@ -54,9 +51,6 @@ export class MCPService {
         }
     }
 
-    /**
-     * Charger les outils depuis le serveur MCP
-     */
     private async loadTools() {
         if (!this.client) {
             throw new Error('MCP client not connected');
@@ -78,16 +72,13 @@ export class MCPService {
         console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
     }
 
-    /**
-     * Obtenir les outils au format OpenAI
-     */
     getOpenAITools() {
-        return this.openaiTools;
+        return this.openaiTools.map(tool => ({
+            ...tool,
+            resources: ["note://*"],
+        }));
     }
 
-    /**
-     * Appeler un outil MCP
-     */
     async callTool(name: string, args: any = {}) {
         if (!this.client) {
             throw new Error('MCP client not connected');
@@ -114,9 +105,6 @@ export class MCPService {
         }
     }
 
-    /**
-     * Gérer les appels de fonction OpenAI avec MCP
-     */
     async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]) {
         const results = [];
 
@@ -144,16 +132,10 @@ export class MCPService {
         return results;
     }
 
-    /**
-     * Vérifier si le client est connecté
-     */
     isConnected() {
         return this.client !== null;
     }
 
-    /**
-     * Fermer la connexion MCP
-     */
     async disconnect() {
         if (this.client) {
             await this.client.close();
@@ -164,22 +146,16 @@ export class MCPService {
         }
     }
 
-    /**
-     * Reconnecter si nécessaire
-     */
     async ensureConnected() {
         if (!this.isConnected()) {
             await this.connect();
         }
     }
+
 }
 
-// Singleton instance
 let mcpServiceInstance: MCPService | null = null;
 
-/**
- * Obtenir l'instance singleton du service MCP
- */
 export function getMCPService(): MCPService {
     if (!mcpServiceInstance) {
         mcpServiceInstance = new MCPService();
