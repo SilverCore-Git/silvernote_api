@@ -140,6 +140,18 @@ io.on("connection", (socket) => {
 
     });
 
+    socket.on('ai-command', async (data: { command: string; content: any }) => {
+      console.log(`AI command received in room ${room}:`, data.command);
+      
+      try {
+        if (data.command === 'insertContent') {
+          io.to(room).emit('ai-command', data);
+        }
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
+    });
+
     socket.on("disconnect", async () => {
 
       const roomId = Array.from(socket.rooms)[1];
