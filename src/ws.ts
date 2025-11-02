@@ -106,12 +106,7 @@ io.on("connection", (socket) => {
         if (currentDoc) {
           currentDoc.title = update;
           socket.to(room).emit("title-update", update);
-
-          const currentNote = await get_note(room);
-          await save_note({
-              ...currentNote!,
-              title: update
-          });
+          console.log('title update : ', update)
         }
       } catch (error) {
         console.error("Error applying update:", error);
@@ -145,8 +140,16 @@ io.on("connection", (socket) => {
 
     });
 
-    socket.on('ai-command', ({ command, content }: { command: string, content: string }) => {
-      socket.to(room).emit('ai-command', { command, content });
+    socket.on('ai-command', async (data: { command: string; content: any }) => {
+      console.log(`AI command received in room ${room}:`, data.command);
+      
+      try {
+        if (data.command === 'insertContent') {
+          io.to(room).emit('ai-command', data);
+        }
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
     });
 
     socket.on("disconnect", async () => {

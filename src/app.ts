@@ -23,6 +23,7 @@ import admin from './routes/admin';
 const app = express();
 const httpServer = createServer(app);
 import './ws'; 
+import { getMCPService } from './mcp';
 
 // Middlewares
 app.use(cors(config.corsOptions));
@@ -40,12 +41,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Routes
-app.use('/api', requireAuth(), api);
-app.use('/api/ai', requireAuth(), api_ai);
-app.use('/api/db', requireAuth(), api_db);
-app.use('/user', requireAuth(), user);
-app.use('/admin', requireAuth(), admin);
-app.use('/money', requireAuth(), money);
+app.use('/api', api); //requireAuth(),
+app.use('/api/ai',  api_ai); //requireAuth(),
+app.use('/api/db',  api_db); //requireAuth(),
+app.use('/user',  user); //requireAuth(),
+app.use('/admin',  admin); //requireAuth(),
+app.use('/money',  money); //requireAuth(),
 
 
 
@@ -64,8 +65,48 @@ app.use((req: Request, res: Response) => {
 });
 
 
-// Démarrage serveur
-httpServer.listen(config.PORT, () => {
-  console.log(`Serveur Express sur le port ${config.PORT}`);
+async function initializeMCP() {
+    try {
+        console.log('Initializing MCP service...');
+        const mcpService = getMCPService();
+        await mcpService.connect();
+        console.log('MCP service initialized successfully');
+    } catch (error: any) {
+        console.error('Failed to initialize MCP service:', error.message);
+        console.log('Server will start without MCP features');
+    }
+}
+
+
+async function startServer() 
+{
+  await initializeMCP();
+  httpServer.listen(config.PORT, () => {
+    console.log(`Serveur Express sur le port ${config.PORT}`);
+  });
+} 
+
+
+process.on('SIGTERM', async () => {
+    console.log('[MCP]: SIGTERM received, shutting down gracefully...');
+    
+    const mcpService = getMCPService();
+    await mcpService.disconnect();
+    
+    process.exit(0);
 });
 
+process.on('SIGINT', async () => {
+    console.log('[MCP]: SIGINT received, shutting down gracefully...');
+    
+    const mcpService = getMCPService();
+    await mcpService.disconnect();
+    
+    process.exit(0);
+});
+
+// Démarrer
+startServer().catch((error) => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+});
