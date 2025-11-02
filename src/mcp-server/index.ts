@@ -1,12 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { array, z } from "zod";
 
 
 // import tools
 import edit_note_content from "./assets/tools/edit_note_content";
 import edit_note_title from "./assets/tools/edit_note_title";
 import edit_note_icon from "./assets/tools/edit_note_icon";
+// import get_note from "./assets/tools/get_note";
 
 
 // Create server instance
@@ -20,6 +21,56 @@ const server = new McpServer({
 });
 
 
+// server.resource(
+//   "note",
+//   "note://{uuid}",
+//   {
+//     title: "Get Note",
+//     description: "Get a specific note by its UUID",
+//     mimeType: "application/json",
+//   },
+//   async (uri) => {
+//     const uuid = uri.pathname.replace("/", "");
+//     console.log(uuid)
+
+//     return {
+//       contents: [
+//         {
+//           uri: uri.href, // 👈 Obligatoire
+//           mimeType: "application/json",
+//           text: JSON.stringify({}, null, 2),
+//         },
+//       ],
+//     };
+//   }
+// );
+
+
+// server.tool(
+//   "get_note",
+//   "get note by uuid or title",
+//   {
+//     uuid: z.string().describe('note uuid for find note').optional(),
+//     title: z.string().describe('note title for find them with userid too').optional(),
+//     userId: z.string().describe('client userid for find note by title').optional(),
+//   },
+//   async (params) => {
+//     const res = await get_note(params);
+//     return {
+//       content: [
+//         {
+//           type: "json",
+//           text: JSON.stringify(
+//             res?.note ?? { notFound: true },
+//             null,
+//             2
+//           ),
+//         },
+//       ],
+//     };
+//   }
+// );
+
 
 // edit a note => content
 server.tool(
@@ -28,7 +79,7 @@ server.tool(
   {
     uuid: z.string().describe('note uuid'),
     content: z.string().describe('the content to insert on the note'),
-    line: z.number().describe('the line where the content will be inserted')
+    pos: z.number().describe('la position où le contenu sera inséré correspond à un certain nombre de caractères.')
   },
   async (parms) => {
     const res = await edit_note_content(parms);
