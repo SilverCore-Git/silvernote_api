@@ -2,37 +2,18 @@ import express, { Request, Response } from "express";
 
 import note_db from "../assets/ts/notes.js";
 import tag_db from "../assets/ts/tags.js";
+import utils from "../assets/ts/utils.js";
+import { Note, Tag } from "../assets/ts/types.js";
 
 const router = express.Router();
 
 
 
-function areArraysEqualIgnoreOrder<T>(a: T[], b: T[]): boolean {
-    if (!Array.isArray(a) || !Array.isArray(b)) return false;
-    if (a.length !== b.length) return false;
-
-    const normalize = (arr: T[]) =>
-        [...arr]
-            .map(item => typeof item === 'object'
-                ? JSON.stringify(Object.keys(item as object).sort().reduce((acc, key) => {
-                    (acc as Record<string, any>)[key] = (item as any)[key];
-                    return acc;
-                }, {} as Record<string, any>))
-                : String(item)
-            )
-            .sort();
-
-    const normA = normalize(a);
-    const normB = normalize(b);
-
-    return normA.every((val, idx) => val === normB[idx]);
-}
-
 router.post('/verify/data', async (req: Request, res: Response) => {
 
     try {
 
-        const { notes, tags } = req.body as { notes: any[]; tags: any[] };
+        const { notes, tags } = req.body as { notes: string; tags: string }; // hash of notes and tags
         const user_id: string | undefined = req.cookies?.user_id;
 
         if (!notes || !tags || !user_id) {
@@ -40,14 +21,17 @@ router.post('/verify/data', async (req: Request, res: Response) => {
             return;
         }
 
-        const db_notes = (await note_db.getNoteByUserId(user_id)).notes;
-        const db_tags = (await tag_db.getTagsByUserId(user_id)).tags;
+        const db_notes: Note[] = (await note_db.getNoteByUserId(user_id)).notes.filter(note => note.title !== '' && note.content !== '');
+        const db_tags: Tag[] = (await tag_db.getTagsByUserId(user_id)).tags;
 
-        const notesMatch = areArraysEqualIgnoreOrder(db_notes, notes);
-        const tagsMatch = areArraysEqualIgnoreOrder(db_tags, tags); // pk ça renvoi false ??
+        const db_notes_hash: string = await utils.hash(db_notes);
+        const db_tags_hash: string = await utils.hash(db_tags);
+
+        const notesMatch = notes === db_notes_hash;
+        const tagsMatch = tags === db_tags_hash;
 
         res.json({
-            ok: notesMatch, //&& tagsMatch,
+            ok: notesMatch && tagsMatch,
             notes: notesMatch,
             notes_length: db_notes.length,
             tags: tagsMatch,
@@ -86,7 +70,11 @@ router.post('/delete/a/note', async (req: Request, res: Response) => {
 });
 
 router.get('/get/user/notes', async (req: Request, res: Response) => {
-    res.json(await note_db.getNoteByUserId(req.query.user_id as string));
+    const db_res = await note_db.getNoteByUserId(req.query.user_id as string);
+    res.json({
+        ...db_res,
+        notes: db_res.notes.filter(note => note.title !== '' && note.content !== '')
+    });
 });
 
 router.post('/delete/notes', async (req: Request, res: Response) => {
