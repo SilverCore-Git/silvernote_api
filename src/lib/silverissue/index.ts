@@ -1,5 +1,5 @@
 import { ErrorRequestHandler } from "express";
-import { Webhook } from "./src/webhook";
+import { Webhook } from "./src/webhook.js";
 
 const webhook = new Webhook('https://discord.com/api/webhooks/1429472000253890601/vw_Kx1KoHjig2I05iumB9WhyT0nSvh78n2eEclUxd19RNsieJ8khUowjcfmCKtWSxTUD');
 

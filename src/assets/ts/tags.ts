@@ -1,5 +1,5 @@
 import nodeFetch from 'node-fetch';
-import type { Tag } from "./types";
+import type { Tag } from "./types.js";
 import { randomUUID } from "crypto";
 
     class Tags {

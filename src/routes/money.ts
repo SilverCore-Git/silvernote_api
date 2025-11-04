@@ -1,7 +1,7 @@
 import { randomUUID, UUID } from 'crypto';
 import express from 'express';
 import Stripe from 'stripe';
-import db from '../assets/ts/database';
+import db from '../assets/ts/database.js';
 
 const router = express.Router();
 

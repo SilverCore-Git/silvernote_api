@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import db from '../assets/ts/database';
+import db from '../assets/ts/database.js';
 
 const router = Router();
 

@@ -3,9 +3,9 @@ import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 const router = express.Router();
 
-import db from '../assets/ts/database';
-import { Benefits, get_benefits_by_planId, get_silver_plan, type Plan } from '../assets/ts/plan';
-import { User } from '../assets/ts/types';
+import db from '../assets/ts/database.js';
+import { Benefits, get_benefits_by_planId, get_silver_plan, type Plan } from '../assets/ts/plan.js';
+import { User } from '../assets/ts/types.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 

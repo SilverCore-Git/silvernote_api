@@ -1,5 +1,5 @@
 import nodeFetch from 'node-fetch';
-import type { Note } from "./types";
+import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
 
     class Notes {

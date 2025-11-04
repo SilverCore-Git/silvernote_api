@@ -2,6 +2,7 @@ import fs from "fs";
 const fsp = fs.promises;
 import path from "path";
 import { randomUUID } from "crypto";
+import __dirname from "./_dirname.js";
 
 interface Item { 
 

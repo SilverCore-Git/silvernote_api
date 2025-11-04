@@ -1,6 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import type { ListToolsRequest, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import OpenAI from 'openai';
 
 // Configuration MCP
@@ -9,7 +8,7 @@ const MCP_CONFIG = {
     args: [
         '-y',
         'tsx',
-        process.env.MCP_SERVER_PATH || './src/mcp-server/index.ts'
+        process.env.MCP_SERVER_PATH || './mcp-server/index.js'
     ]
 };
 

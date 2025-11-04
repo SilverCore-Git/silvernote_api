@@ -2,9 +2,12 @@ import { Server } from "socket.io";
 import { createServer } from 'http';
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import config from './config.json';
-import notes from "./assets/ts/notes";
-import { Note } from "./assets/ts/types";
+import fs from 'fs';
+import path from 'path';
+import __dirname from "./assets/ts/_dirname.js";
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'))
+import notes from "./assets/ts/notes.js";
+import { Note } from "./assets/ts/types.js";
 
 const httpServer = createServer();
 

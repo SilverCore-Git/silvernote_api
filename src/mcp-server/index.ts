@@ -1,12 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { array, z } from "zod";
+import { z } from "zod";
 
 
 // import tools
-import edit_note_content from "./assets/tools/edit_note_content";
-import edit_note_title from "./assets/tools/edit_note_title";
-import edit_note_icon from "./assets/tools/edit_note_icon";
+import edit_note_content from "./assets/tools/edit_note_content.js";
+import edit_note_title from "./assets/tools/edit_note_title.js";
+import edit_note_icon from "./assets/tools/edit_note_icon.js";
 // import get_note from "./assets/tools/get_note";
 
 

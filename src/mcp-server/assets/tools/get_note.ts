@@ -1,5 +1,5 @@
-import notes from "../../../assets/ts/notes"
-import { Note } from "../../../assets/ts/types"
+import notes from "../../../assets/ts/notes.js"
+import { Note } from "../../../assets/ts/types.js"
 
 
 export default async function get_note 

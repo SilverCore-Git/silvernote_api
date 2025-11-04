@@ -2,10 +2,11 @@ import path from 'path';
 import fs from 'fs';
 const fsp = fs.promises;
 
-import utils from './utils';
-import type { Session, User } from './types';
+import __dirname from './_dirname.js';
+import utils from './utils.js';
+import type { Session, User } from './types.js';
 import { UUID } from 'crypto';
-import { get_plan_by_name } from './plan';
+import { get_plan_by_name } from './plan.js';
 
 class Database {
 

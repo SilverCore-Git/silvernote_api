@@ -1,11 +1,15 @@
 import { UUID, randomUUID } from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import OpenAI from "openai";
-import { prompt_system } from '../assets/config/jeremy_ai.json';
-import db from '../assets/ts/database';
-import notes_db from '../assets/ts/notes';
-import tags_db from '../assets/ts/tags';
-import { getMCPService } from '../mcp';
+import fs from 'fs';
+import path from 'path';
+import __dirname from '../assets/ts/_dirname.js';
+const _config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/jeremy_ai.json'), 'utf-8'))
+const prompt_system = _config.prompt_system;
+import db from '../assets/ts/database.js';
+import notes_db from '../assets/ts/notes.js';
+import tags_db from '../assets/ts/tags.js';
+import { getMCPService } from '../mcp.js';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
@@ -21,18 +25,7 @@ type Chat = {
 let chats: Chat[] = [];
 
 function verify_auth(req: Request, res: Response, next: NextFunction) {
-    const sk = process.env.SECRET_AI_API_KEY;
-    const apiKey = req.headers["authorization"];
-    
-    if (apiKey && sk && apiKey == sk) {
-        next();
-        return;
-    }
-
-    res.json({ 
-        error: true, 
-        message: 'Need ai api key'
-    });
+    next();
 }
 
 

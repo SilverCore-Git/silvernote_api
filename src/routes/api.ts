@@ -1,18 +1,19 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
-import type { News, Note } from '../assets/ts/types';
+import type { News, Note } from '../assets/ts/types.js';
 import path from 'path';
-import JsonListManager from '../assets/ts/db_json_manager';
-import notes from '../assets/ts/notes';
+import JsonListManager from '../assets/ts/db_json_manager.js';
+import notes from '../assets/ts/notes.js';
 import { clerkClient } from "@clerk/express";
 import { randomUUID } from 'crypto';
+
 
 const router = Router();
 
 
 router.get('/get_news', async (req: Request, res: Response) => {
 
-    const data = await fs.promises.readFile(path.join(__dirname, '../config.json'), 'utf-8');
+    const data = await fs.promises.readFile('./config.json', 'utf-8');
     const news: Promise<News> = JSON.parse(data).news;
 
     res.json( (await news).active ? news : false );

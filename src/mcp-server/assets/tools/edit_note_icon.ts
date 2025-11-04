@@ -1,4 +1,4 @@
-import useWS from "../useWS";
+import useWS from "../useWS.js";
 
 export default async function edit_note_title 
 (parms: { uuid: string, icon: string })

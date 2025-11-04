@@ -1,4 +1,4 @@
-import useWS from "../useWS";
+import useWS from "../useWS.js";
 
 export default async function edit_note_content
 (parms: { uuid: string, content: string, pos: number })

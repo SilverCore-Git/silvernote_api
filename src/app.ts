@@ -2,28 +2,34 @@ import express, { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import { createServer } from 'http';
-import { SilverIssueMiddleware, webhook } from './lib/silverissue/';
-import AllowedOriginCheck from './middleware/AllowedOriginCheck';
+import { SilverIssueMiddleware, webhook } from './lib/silverissue/index.js';
+import AllowedOriginCheck from './middleware/AllowedOriginCheck.js';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import 'dotenv/config';
 
-import pkg from './package.json';
-import config from './config.json';
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf-8'));
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
+
 
 // Import des routes
-import api from './routes/api';
-import api_db from './routes/api.db';
-import api_ai from './routes/api.ai';
-import user from './routes/user';
-import money from './routes/money';
-import admin from './routes/admin';
+import api from './routes/api.js';
+import api_db from './routes/api.db.js';
+import api_ai from './routes/api.ai.js';
+import user from './routes/user.js';
+import money from './routes/money.js';
+import admin from './routes/admin.js';
 
 const app = express();
 const httpServer = createServer(app);
-import './ws'; 
-import { getMCPService } from './mcp';
+import './ws.js'; 
+import { getMCPService } from './mcp.js';
 
 // Middlewares
 app.use(cors(config.corsOptions));
@@ -35,7 +41,7 @@ app.use(SilverIssueMiddleware);
 
 app.use(clerkMiddleware());
 
-app.use(express.json({ limit: "500mb" }));
+app.use(express.json({ limit: "1000mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 

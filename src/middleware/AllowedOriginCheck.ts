@@ -1,6 +1,8 @@
 import  type { NextFunction, Response, Request } from "express";
-import config from '../config.json';
-import { error } from "console";
+import fs from 'fs';
+import path from 'path';
+import __dirname from "../assets/ts/_dirname.js";
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'));
 
 export default function  AllowedOriginCheck (req: Request, res: Response, next: NextFunction) 
 {

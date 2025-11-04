@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 
-import note_db from "../assets/ts/notes";
-import tag_db from "../assets/ts/tags";
+import note_db from "../assets/ts/notes.js";
+import tag_db from "../assets/ts/tags.js";
 
 const router = express.Router();
 

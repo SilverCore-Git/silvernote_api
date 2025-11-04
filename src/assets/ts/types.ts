@@ -1,5 +1,5 @@
 import { UUID } from "crypto";
-import { Plan } from "./plan";
+import { Plan } from "./plan.js";
 
 export interface User { 
     userId: string;
