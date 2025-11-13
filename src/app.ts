@@ -32,28 +32,47 @@ import './ws.js';
 import { getMCPService } from './mcp.js';
 
 // Middlewares
-app.use(cors(config.corsOptions));
+const corsOptionsDelegate = function (req: Request, callback: any) {
+  const origin = req.header('Origin');
+  const allowedOrigins = config.corsOptions.origin;
+
+  let corsOptions;
+  if (allowedOrigins.includes(origin)) {
+    corsOptions = {
+      origin: origin, // Spécifie exactement l’origine appelante
+      credentials: true,
+      methods: config.corsOptions.methods,
+      allowedHeaders: config.corsOptions.allowedHeaders,
+    };
+  } else {
+    corsOptions = { origin: false };
+  }
+
+  callback(null, corsOptions);
+};
+
+app.use(cors(corsOptionsDelegate));
+
 app.use(cookieParser(process.env.COOKIE_SIGN_KEY));
 app.use(morgan('dev'));
 
 app.use(AllowedOriginCheck);
 app.use(SilverIssueMiddleware);
 
-app.use(clerkMiddleware());
-
 app.use(express.json({ limit: "1000mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(clerkMiddleware());
+
 
 // Routes
 app.use('/api', api); //requireAuth(),
-app.use('/api/ai',  api_ai); //requireAuth(),
-app.use('/api/db',  api_db); //requireAuth(),
+app.use('/api/ai', api_ai); //requireAuth(),
 app.use('/user',  user); //requireAuth(),
 app.use('/admin',  admin); //requireAuth(),
 app.use('/money',  money); //requireAuth(),
-
+app.use('/api/db', requireAuth(),  api_db); //requireAuth(), => remettre auth + ajouter credential include dans front
 
 
 app.get('/version', (req, res) => {

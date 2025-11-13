@@ -3,7 +3,7 @@
     "PORT": 3000,
 
     "corsOptions": {
-        "origin": [ "https://www.silvernote.fr", "https://app.silvernote.fr", "http://localhost:5173", "http://localhost:4173" ],
+        "origin": [ "https://www.silvernote.fr", "https://app.silvernote.fr", "http://localhost:5173",  "http://localhost:4173" ],
         "methods": ["GET", "POST"],
         "allowedHeaders": ["Content-Type", "authorization"],
         "credentials": true
