@@ -209,7 +209,13 @@ export default async function send_to_gemini
 
     } catch (err: any) {
         console.error('Error in /send:', err);
-        res.status(500).json({ error: true, message: err.message });
+        
+        if (!res.headersSent) {
+            res.status(500).json({ error: true, message: err.message });
+        } else {
+            res.write(`data: [ERROR]${err.message}\n\n`);
+            res.end();
+        }
     }
 
 }

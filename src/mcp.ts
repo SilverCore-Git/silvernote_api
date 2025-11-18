@@ -78,12 +78,60 @@ export class MCPService {
         }));
     }
 
-    public getGeminiTools() {
-        return this.tools.map(tool => ({
-            name: tool.function.name,
-            description: tool.function.description,
-            parameters: tool.function.parameters
-        }));
+    public getGeminiTools() 
+    {
+        if (!this.tools || this.tools.length === 0) {
+            return [];
+        }
+        
+        return this.tools
+            .filter(tool => tool && (tool.function?.name || tool.name))
+            .map(tool => {
+                const isOpenAIFormat = 'function' in tool;
+                
+                const parameters = isOpenAIFormat 
+                    ? tool.function.parameters 
+                    : (tool.inputSchema || tool.parameters || {});
+                
+                const cleanedParameters = this.cleanSchemaForGemini(parameters);
+                
+                return {
+                    name: isOpenAIFormat ? tool.function.name : tool.name,
+                    description: isOpenAIFormat ? tool.function.description : tool.description,
+                    parameters: cleanedParameters
+                };
+            });
+    }
+
+    private cleanSchemaForGemini(schema: any): any 
+    {
+        if (!schema || typeof schema !== 'object') {
+            return schema;
+        }
+        
+        const cleaned = JSON.parse(JSON.stringify(schema));
+        
+        const removeInvalidFields = (obj: any): any => {
+            if (Array.isArray(obj)) {
+                return obj.map(removeInvalidFields);
+            }
+            
+            if (obj && typeof obj === 'object') {
+                
+                delete obj.$schema;
+                delete obj.additionalProperties;
+                delete obj.$defs;
+                delete obj.definitions;
+                
+                for (const key in obj) {
+                    obj[key] = removeInvalidFields(obj[key]);
+                }
+            }
+            
+            return obj;
+        };
+        
+        return removeInvalidFields(cleaned);
     }
 
     async callTool(name: string, args: any = {}) {

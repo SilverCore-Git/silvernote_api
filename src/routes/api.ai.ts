@@ -11,11 +11,12 @@ import tags_db from '../assets/ts/tags.js';
 import { getMCPService } from '../mcp.js';
 import send_to_chatgpt from './api.ai/send_to_chatgpt.js';
 import { Chat } from './api.ai/types.js';
+import send_to_gemini from './api.ai/send_to_gemini.js';
 
 const router = Router();
 
 
-let chats: Chat[] = [];
+let chats: any[] = [];
 
 function verify_auth(req: Request, res: Response, next: NextFunction) {
     next();
@@ -94,7 +95,8 @@ router.post('/close', verify_auth, async (req: Request, res: Response) => {
 });
 
 router.post('/send', verify_auth, async (req: Request, res: Response) => {
-    return send_to_chatgpt(req, res, chats);
+    //send_to_chatgpt(req, res, chats);
+    send_to_gemini(req, res, chats);
 });
 
 export default router;
