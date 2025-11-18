@@ -1,6 +1,7 @@
 import { UUID, randomUUID } from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import fs from 'fs';
 import path from 'path';
 import __dirname from '../assets/ts/_dirname.js';
