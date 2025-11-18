@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { GoogleGenerativeAI, Content } from '@google/generative-ai';
+import { GoogleGenerativeAI, Content, Part } from '@google/generative-ai';
 import notes_db from '../../assets/ts/notes.js';
 import { getMCPService } from '../../mcp.js';
 import { UUID } from 'crypto';
@@ -8,7 +8,7 @@ export interface Chat {
     uuid: UUID;
     userID: string;
     data: { notes: any; tags: any };
-    messages: Content[];
+    messages: { content: string, role: string }[];
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
@@ -196,7 +196,7 @@ export default async function send_to_gemini
             for (const result of toolResults) {
                 conversationMessages.push({
                     role: 'function',
-                    name: result.tool_call_id,
+                    //name: result.tool_call_id,
                     content: result.content
                 });
                 
