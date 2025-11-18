@@ -71,10 +71,18 @@ export class MCPService {
         console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
     }
 
-    getOpenAITools() {
+    public getOpenAITools() {
         return this.openaiTools.map(tool => ({
             ...tool,
             resources: ["note://*"],
+        }));
+    }
+
+    public getGeminiTools() {
+        return this.tools.map(tool => ({
+            name: tool.function.name,
+            description: tool.function.description,
+            parameters: tool.function.parameters
         }));
     }
 
