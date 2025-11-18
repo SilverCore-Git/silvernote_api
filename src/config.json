@@ -12,7 +12,7 @@
 
     "news": {
 
-        "active": false,
+        "active": true,
 
         "message": "Simplifier vous la tache avec silvernote.", 
         "title": "Bienvenue sur SilverNote", 
