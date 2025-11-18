@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto'
+import crypto, { randomUUID } from 'crypto'
 
 class utils {
 
