@@ -63,11 +63,41 @@ export default async function send_to_gemini
         // Convertir les messages au format Gemini
         const convertToGeminiMessages = (messages: any[]): Content[] => {
             return messages
-                .filter(msg => msg.role !== 'system') // Le system sera géré séparément
-                .map(msg => ({
-                    role: msg.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: msg.content || '' }]
-                }));
+                .filter(msg => msg.role !== 'system')
+                .map(msg => {
+                    const parts: Part[] = [];
+                    
+                    if (msg.content) {
+                        parts.push({ text: msg.content });
+                    }
+                    
+                    if (msg.tool_calls && msg.tool_calls.length > 0) {
+                        for (const toolCall of msg.tool_calls) {
+                            parts.push({
+                                functionCall: {
+                                    name: toolCall.function.name,
+                                    args: JSON.parse(toolCall.function.arguments)
+                                }
+                            });
+                        }
+                    }
+                    
+                    if (msg.role === 'function') {
+                        parts.push({
+                            functionResponse: {
+                                name: msg.name,
+                                response: {
+                                    content: msg.content
+                                }
+                            }
+                        });
+                    }
+                    
+                    return {
+                        role: msg.role === 'assistant' || msg.role === 'function' ? 'model' : 'user',
+                        parts
+                    } as Content;
+                });
         };
 
         let conversationMessages = [...chat.messages.slice(-10)];
