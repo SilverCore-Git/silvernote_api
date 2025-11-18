@@ -67,6 +67,20 @@ export default async function send_to_gemini
                 .map(msg => {
                     const parts: Part[] = [];
                     
+                    if (msg.role === 'function') {
+                        return {
+                            role: 'user',
+                            parts: [{
+                                functionResponse: {
+                                    name: msg.name,
+                                    response: {
+                                        content: msg.content
+                                    }
+                                }
+                            }]
+                        } as Content;
+                    }
+                    
                     if (msg.content) {
                         parts.push({ text: msg.content });
                     }
@@ -82,19 +96,8 @@ export default async function send_to_gemini
                         }
                     }
                     
-                    if (msg.role === 'function') {
-                        parts.push({
-                            functionResponse: {
-                                name: msg.name,
-                                response: {
-                                    content: msg.content
-                                }
-                            }
-                        });
-                    }
-                    
                     return {
-                        role: msg.role === 'assistant' || msg.role === 'function' ? 'model' : 'user',
+                        role: msg.role === 'assistant' ? 'model' : 'user',
                         parts
                     } as Content;
                 });
@@ -172,13 +175,13 @@ export default async function send_to_gemini
 
             // Ajouter le message de l'assistant
             conversationMessages.push({
-                role: 'assistant',
+                role: 'function',
                 content: assistantMessage || null,
                 tool_calls: toolCalls.length > 0 ? toolCalls : undefined
             } as any);
 
             chat.messages.push({
-                role: 'assistant',
+                role: 'function',
                 content: assistantMessage
             });
 
