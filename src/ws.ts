@@ -67,21 +67,23 @@ io.on("connection", (socket) => {
       // Ne pas initialiser le contenu manuellement
       // il sera géré par TipTap côté client
       
-      const saveNote = async () => {
-        const currentDoc = docs.get(room);
-        const currentNote = await get_note(room);
-        if (currentNote && currentDoc) {
-            await save_note({
-              ...currentNote,
-              title: currentDoc.title,
-              icon: currentDoc.icon
-            });
-        }
-      }
-      
-      await saveNote();
+      // const saveNote = async () => {
+      //   const currentDoc = docs.get(room);
+      //   const currentNote = await get_note(room);
+      //   if (currentNote && currentDoc) {
+      //       await save_note({
+      //         ...currentNote,
+      //         title: currentDoc.title,
+      //         icon: currentDoc.icon
+      //       });
+      //   }
+      // }
+      // await saveNote();
+
       const saveInterval = setInterval(async () => {
-        await saveNote();
+        // auto save gérer par le client !!!
+        clearInterval(saveInterval);
+        //await saveNote();
       }, 10000);
 
       docs.set(room, { ydoc, awareness, saveInterval, title, icon });
