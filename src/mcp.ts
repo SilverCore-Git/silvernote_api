@@ -160,6 +160,34 @@ export class MCPService {
         }
     }
 
+    async handleToolCallsGemini(toolCalls: any[]) {
+        const results = [];
+
+        for (const toolCall of toolCalls) {
+            const name = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments);
+
+            try {
+                const result = await this.callTool(name, args);
+
+                results.push({
+                    role: 'function',
+                    name: name,
+                    content: result
+                });
+
+            } catch (error: any) {
+                results.push({
+                    role: 'function',
+                    name: name,
+                    content: `Error: ${error.message}`
+                });
+            }
+        }
+
+        return results;
+    }
+
     async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]) {
         const results = [];
 

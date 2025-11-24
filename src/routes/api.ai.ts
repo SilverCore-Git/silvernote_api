@@ -95,8 +95,18 @@ router.post('/close', verify_auth, async (req: Request, res: Response) => {
 });
 
 router.post('/send', verify_auth, async (req: Request, res: Response) => {
-    //send_to_chatgpt(req, res, chats);
-    send_to_gemini(req, res, chats);
+    
+    const model = req.query?.model as 'gpt' | 'gemini';
+
+    if (true || model && model == 'gpt')
+    {
+        send_to_chatgpt(req, res, chats);
+    }
+    else
+    {
+        send_to_gemini(req, res, chats);
+    }
+
 });
 
 export default router;

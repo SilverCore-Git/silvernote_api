@@ -69,32 +69,30 @@ export default async function send_to_gemini
                     
                     if (msg.role === 'function') {
                         return {
-                            role: 'user',
+                            role: 'function',
                             parts: [{
                                 functionResponse: {
-                                    name: msg.name,
-                                    response: {
-                                        content: msg.content
-                                    }
+                                    name: msg.name || 'unknown_tool',
+                                    response: { content: msg.content }
                                 }
                             }]
                         } as Content;
                     }
-                    
+                                        
                     if (msg.content) {
                         parts.push({ text: msg.content });
                     }
                     
-                    if (msg.tool_calls && msg.tool_calls.length > 0) {
-                        for (const toolCall of msg.tool_calls) {
-                            parts.push({
-                                functionCall: {
-                                    name: toolCall.function.name,
-                                    args: JSON.parse(toolCall.function.arguments)
-                                }
-                            });
-                        }
-                    }
+                    // if (msg.tool_calls && msg.tool_calls.length > 0) {
+                    //     for (const toolCall of msg.tool_calls) {
+                    //         parts.push({
+                    //             functionCall: {
+                    //                 name: toolCall.function.name,
+                    //                 args: JSON.parse(toolCall.function.arguments)
+                    //             }
+                    //         });
+                    //     }
+                    // }
                     
                     return {
                         role: msg.role === 'assistant' ? 'model' : 'user',
@@ -193,13 +191,13 @@ export default async function send_to_gemini
             // Exécuter les appels d'outils via MCP
             res.write(`data: [TOOLS:${toolCalls.map(tc => tc.function.name).join(',')}]\n\n`);
 
-            const toolResults = await mcpService.handleToolCalls(toolCalls);
+            const toolResults = await mcpService.handleToolCallsGemini(toolCalls);
             
             // Convertir les résultats au format compatible
             for (const result of toolResults) {
                 conversationMessages.push({
                     role: 'function',
-                    //name: result.tool_call_id,
+                    //name: result.name,
                     content: result.content
                 });
                 
