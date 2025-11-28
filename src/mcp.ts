@@ -8,7 +8,7 @@ const MCP_CONFIG = {
     args: [
         '-y',
         'tsx',
-        process.env.MCP_SERVER_PATH || './mcp-server/index.js'
+        process.env.MCP_SERVER_PATH || './src/mcp-server/index.js'
     ]
 };
 

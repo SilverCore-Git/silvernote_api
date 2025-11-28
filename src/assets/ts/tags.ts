@@ -48,6 +48,7 @@ import { randomUUID } from "crypto";
 
             if (!tag.user_id) return { error: true, message: "user_id requis" };
             tag.uuid = tag.uuid || randomUUID();
+            tag._id = tag.uuid || randomUUID();
             tag.created_at = tag.created_at || Date.now();
             
             const res = await this.fetch('/push', {
