@@ -45,14 +45,18 @@ io.on("connection", (socket) => {
   console.log("Client connected :", socket.id);
 
   socket.on("join-room", async ({ room, userId }: { room: string, userId?: string }) => {
+
     if (!room) return;
     socket.join(room);
     
     let docData = docs.get(room);
 
     if (!docData) {
+
       const ydoc = new Y.Doc();
-      new Y.Text();
+      
+      // TipTap stocke le contenu ProseMirror dans un XmlFragment (pas utiliser de ytext)
+      const fragment = ydoc.getXmlFragment("prosemirror");
 
       const awareness = new awarenessProtocol.Awareness(ydoc);
       const note = await get_note(room);
@@ -60,21 +64,26 @@ io.on("connection", (socket) => {
       const title = note?.title || "";
       const icon = note?.icon || "";
 
-      const saveNote = async () => {
-        const currentDoc = docs.get(room);
-        const currentNote = await get_note(room);
-        if (currentNote && currentDoc) {
-            await save_note({
-              ...currentNote,
-              title: currentDoc.title,
-              icon: currentDoc.icon
-            });
-        }
-      }
+      // Ne pas initialiser le contenu manuellement
+      // il sera géré par TipTap côté client
       
-      await saveNote();
+      // const saveNote = async () => {
+      //   const currentDoc = docs.get(room);
+      //   const currentNote = await get_note(room);
+      //   if (currentNote && currentDoc) {
+      //       await save_note({
+      //         ...currentNote,
+      //         title: currentDoc.title,
+      //         icon: currentDoc.icon
+      //       });
+      //   }
+      // }
+      // await saveNote();
+
       const saveInterval = setInterval(async () => {
-        await saveNote();
+        // auto save gérer par le client !!!
+        clearInterval(saveInterval);
+        //await saveNote();
       }, 10000);
 
       docs.set(room, { ydoc, awareness, saveInterval, title, icon });
@@ -83,59 +92,86 @@ io.on("connection", (socket) => {
 
     const { ydoc, awareness } = docData;
 
-    // Envoi de l'état complet
     const initialState = Y.encodeStateAsUpdate(ydoc);
-    socket.emit("sync", initialState);
+    
+    const stateArray = Array.from(initialState);
+    socket.emit("sync", stateArray);
+    
+    socket.emit("title-update", docData.title);
+    socket.emit("icon-update", docData.icon);
+    
     if (userId) {
       socket.emit('new_user', userId);
     }
 
-    socket.on("y-update", async (update: Uint8Array) => {
+    socket.on("y-update", async (update: Uint8Array | number[]) => 
+    {
+
       try {
-        
-        const uint8Array = new Uint8Array(update);
+
+        const uint8Array = update instanceof Uint8Array 
+          ? update 
+          : new Uint8Array(update);
+
         Y.applyUpdate(ydoc, uint8Array);
-        socket.to(room).emit("y-update", uint8Array);
-        
+        socket.to(room).emit("y-update", Array.from(uint8Array));
+
       } catch (error) {
         console.error("Error applying update:", error);
       }
+
     });
 
 
-    socket.on('title-update', async (update: string) => {
+    socket.on('title-update', async (update: string) => 
+    {
+
       try {
+
         const currentDoc = docs.get(room);
-        if (currentDoc) {
+
+        if (currentDoc) 
+        {
           currentDoc.title = update;
           socket.to(room).emit("title-update", update);
-          console.log('title update : ', update)
         }
+
       } catch (error) {
         console.error("Error applying update:", error);
       }
+
     });
 
-    socket.on('icon-update', async (update: string) => {
+    socket.on('icon-update', async (update: string) => 
+    {
+
       try {
+
         const currentDoc = docs.get(room);
-        if (currentDoc) {
+
+        if (currentDoc) 
+        {
           currentDoc.icon = update;
           socket.to(room).emit("icon-update", update);
         }
+
       } catch (error) {
         console.error("Error applying update:", error);
       }
+
     })
 
-    socket.on("awareness-update", (update: Uint8Array) => {
+    socket.on("awareness-update", (update: Uint8Array | number[]) => 
+    {
 
       try {
 
-        const uint8Array = new Uint8Array(update);
+        const uint8Array = update instanceof Uint8Array 
+          ? update 
+          : new Uint8Array(update);
         awarenessProtocol.applyAwarenessUpdate(awareness, uint8Array, socket);
         
-        socket.to(room).emit("awareness-update", uint8Array);
+        socket.to(room).emit("awareness-update", Array.from(uint8Array));
 
       } catch (error) {
         console.error("Error applying awareness update:", error);
@@ -143,16 +179,21 @@ io.on("connection", (socket) => {
 
     });
 
-    socket.on('ai-command', async (data: { command: string; content: any }) => {
+    socket.on('ai-command', async (data: { command: string; content: any }) => 
+    {
+
       console.log(`AI command received in room ${room}:`, data.command);
       
       try {
+
         if (data.command === 'insertContent') {
           io.to(room).emit('ai-command', data);
         }
+
       } catch (error) {
         console.error("Error handling AI command:", error);
       }
+
     });
 
     socket.on("disconnect", async () => {
@@ -164,13 +205,19 @@ io.on("connection", (socket) => {
       if (!docData) return;
 
       const { ydoc, saveInterval } = docData;
-      const content = ydoc.getText("prosemirror").toString();
+      
+      // info de claude pour passer autosave dans back //
+      
+      // Pour sauvegarder en HTML, vous devrez utiliser une librairie
+      // comme prosemirror-model pour convertir le XmlFragment en HTML
+      // Pour l'instant, on sauvegarde juste les métadonnées
+      // Le contenu sera sauvegardé via l'autosave périodique côté client
 
       const note: Note | undefined = await get_note(roomId);
       if (note) {
         await save_note({
           ...note,
-          content,
+          // contenu maj avec autosave du client
           title: docData.title,
           icon: docData.icon
         });
@@ -179,7 +226,6 @@ io.on("connection", (socket) => {
       awareness.setLocalState(null);
       
       if (room && io.sockets.adapter.rooms.get(room)?.size === 0) {
-        // Clear the save interval when the last user leaves
         if (saveInterval) {
           clearInterval(saveInterval);
         }
@@ -187,21 +233,12 @@ io.on("connection", (socket) => {
       }
       
       console.log("Client disconnected:", socket.id);
-
     });
-
-
   });
-
-
 });
-
-
 
 console.log("Socket.IO server running...");
 
-
-// Démarrage serveur
 httpServer.listen('3434', () => {
   console.log(`Serveur WebSocket sur le port 3434`);
 });

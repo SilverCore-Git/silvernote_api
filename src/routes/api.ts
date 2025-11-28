@@ -13,7 +13,7 @@ const router = Router();
 
 router.get('/get_news', async (req: Request, res: Response) => {
 
-    const data = await fs.promises.readFile('./dist/config.json', 'utf-8');
+    const data = await fs.promises.readFile('./dist/config.json', 'utf-8'); // remettre ./config pour prod
     const news: Promise<News> = JSON.parse(data).news;
 
     res.json( (await news).active ? news : false );

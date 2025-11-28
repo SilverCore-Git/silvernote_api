@@ -71,11 +71,67 @@ export class MCPService {
         console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
     }
 
-    getOpenAITools() {
+    public getOpenAITools() {
         return this.openaiTools.map(tool => ({
             ...tool,
             resources: ["note://*"],
         }));
+    }
+
+    public getGeminiTools() 
+    {
+        if (!this.tools || this.tools.length === 0) {
+            return [];
+        }
+        
+        return this.tools
+            .filter(tool => tool && (tool.function?.name || tool.name))
+            .map(tool => {
+                const isOpenAIFormat = 'function' in tool;
+                
+                const parameters = isOpenAIFormat 
+                    ? tool.function.parameters 
+                    : (tool.inputSchema || tool.parameters || {});
+                
+                const cleanedParameters = this.cleanSchemaForGemini(parameters);
+                
+                return {
+                    name: isOpenAIFormat ? tool.function.name : tool.name,
+                    description: isOpenAIFormat ? tool.function.description : tool.description,
+                    parameters: cleanedParameters
+                };
+            });
+    }
+
+    private cleanSchemaForGemini(schema: any): any 
+    {
+        if (!schema || typeof schema !== 'object') {
+            return schema;
+        }
+        
+        const cleaned = JSON.parse(JSON.stringify(schema));
+        
+        const removeInvalidFields = (obj: any): any => {
+            if (Array.isArray(obj)) {
+                return obj.map(removeInvalidFields);
+            }
+            
+            if (obj && typeof obj === 'object') {
+                
+                delete obj.$schema;
+                delete obj.additionalProperties;
+                delete obj.$defs;
+                delete obj.definitions;
+                
+                for (const key in obj) {
+                    obj[key] = removeInvalidFields(obj[key]);
+                }
+            }
+            
+            return obj;
+        };
+        
+        return removeInvalidFields(cleaned);
     }
 
     async callTool(name: string, args: any = {}) {
@@ -102,6 +158,34 @@ export class MCPService {
             console.error(`Tool call failed: ${error.message}`);
             throw error;
         }
+    }
+
+    async handleToolCallsGemini(toolCalls: any[]) {
+        const results = [];
+
+        for (const toolCall of toolCalls) {
+            const name = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments);
+
+            try {
+                const result = await this.callTool(name, args);
+
+                results.push({
+                    role: 'function',
+                    name: name,
+                    content: result
+                });
+
+            } catch (error: any) {
+                results.push({
+                    role: 'function',
+                    name: name,
+                    content: `Error: ${error.message}`
+                });
+            }
+        }
+
+        return results;
     }
 
     async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]) {
