@@ -1,9 +1,18 @@
-import express, { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 
 import note_db from "../assets/ts/notes.js";
 import tag_db from "../assets/ts/tags.js";
 import utils from "../assets/ts/utils.js";
 import { Note, Tag } from "../assets/ts/types.js";
+import multer from 'multer';
+import path from "path";
+import fs from 'fs';
+import axios from 'axios';
+import FormData from "form-data";
+import downloadFile from "../assets/ts/downloadFile.js";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -108,6 +117,87 @@ router.post('/delete/tags', async (req: Request, res: Response) => {
     res.json(await tag_db.clearUserTags(req.cookies.user_id));
 });
 
+
+
+const uploadDir = path.join(__dirname, "../temp");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+const storage = multer.diskStorage({
+    destination: (req: Request, file: any, cb: any) => {
+        cb(null, uploadDir);
+    },
+    filename: (req: Request, file: any, cb: any) => {
+        cb(null, file.originalname);
+    }
+});
+
+const upload = multer({ 
+    storage,
+    limits: {
+        fileSize: 1 * 1024 * 1024 * 1024 // 16 Go
+    }
+});
+
+
+router.post('/image/upload', upload.single('file'), async (req: Request, res: Response) => {
+    if (!req.file) {
+        res.json({ error: true, message: 'File not found' });
+        return;
+    }
+
+    const file = req.file;
+    const fileStream = fs.createReadStream(file.path);
+
+    const formData = new FormData();
+    formData.append("file", fileStream, {
+        filename: file.originalname,
+        contentType: file.mimetype,
+    });
+
+    try {
+        const _res = await axios.post("https://db.silvernote.fr/file/upload", formData, {
+            headers: {
+                ...formData.getHeaders(),
+                "Authorization": process.env.DB_API_SK_1 || "",
+                "X-API-Key": process.env.DB_API_SK_2 || "",
+            },
+            maxBodyLength: Infinity,
+        });
+
+        res.json({
+            ..._res.data,
+            url: 'http://localhost:3000/api/db/image/get/' + _res.data.file.UUID
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            error: true,
+            message: err.message || err
+        });
+    }
+});
+
+
+
+router.get('/image/get/:name', async (req, res) => {
+
+    const baseName = req.params.name;
+
+    const files = fs.readdirSync(uploadDir);
+
+    const match = files.find(f => f.startsWith(baseName + "."));
+
+    if (match) 
+    {
+        const filePath = path.join(uploadDir, match);
+        res.sendFile(filePath);
+        return;
+    }
+    
+    await downloadFile(baseName).then(filePath => {
+        res.sendFile(filePath);
+    })
+
+});
 
 
 export default router;
