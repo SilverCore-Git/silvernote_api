@@ -1,8 +1,11 @@
 import axios from "axios";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const uploadDir: string = path.join('../../temp');
+const uploadDir: string = path.join(__dirname, '../../temp');
 
 export default async function
 (uuid: string): Promise<string>
