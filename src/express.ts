@@ -79,11 +79,11 @@ app.use(clerkMiddleware());
 
 // Routes
 app.use('/api', api);
-app.use('/api/ai', api_ai); //requireAuth()
+app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
 app.use('/money',  money);
-app.use('/api/db', requireAuth(),  api_db); //requireAuth()
+app.use('/api/db', requireAuth(),  api_db);
 
 
 app.get('/version', (req, res) => {
