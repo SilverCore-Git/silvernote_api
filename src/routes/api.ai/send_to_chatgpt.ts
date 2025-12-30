@@ -63,7 +63,7 @@ export default async function send_to_chatgpt
 
             // Appel à OpenAI avec les outils MCP
             const stream = await AIclient.chat.completions.create({
-                model: "gpt-5.1",
+                model: "gpt-5.2",
                 messages: conversationMessages,
                 tools: mcpTools.length > 0 ? mcpTools : undefined,
                 tool_choice: 'auto',
