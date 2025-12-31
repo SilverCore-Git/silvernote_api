@@ -153,6 +153,13 @@ io.on("connection", (socket) => {
         {
           currentDoc.icon = update;
           socket.to(room).emit("icon-update", update);
+          const note: Note | undefined = await get_note(room);
+          if (note) {
+            await save_note({
+              ...note,
+              icon: update
+            });
+          }
         }
 
       } catch (error) {
