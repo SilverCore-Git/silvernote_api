@@ -1,3 +1,3 @@
-import * as Share from './Share.js';
+import Share from './Share.js';
 
 export default Share;
