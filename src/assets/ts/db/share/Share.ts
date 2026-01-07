@@ -26,6 +26,11 @@ class ShareManager
         return await this.db.get_share(uuid);
     }
 
+    public async getAll()
+    {
+        return await this.db.get_all_shares();
+    }
+
     public async delete(uuid: string)
     {
         await this.db.delete_share(uuid);

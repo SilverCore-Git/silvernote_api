@@ -45,6 +45,19 @@ class ShareDB
         await fsp.writeFile(share_path, JSON.stringify(_share, null, 2), 'utf-8');
     }
 
+    public async get_all_shares(): Promise<Share[]>
+    {
+        await this.init();
+        const files = await fsp.readdir(this.share_db_dir_path);
+        const shares: Share[] = [];
+        for (const file of files) {
+            const share_path = `${this.share_db_dir_path}/${file}`;
+            const data = await fsp.readFile(share_path, 'utf-8');
+            shares.push(JSON.parse(data));
+        }
+        return shares;
+    }
+
     public async get_share(uuid: string): Promise<Share | undefined>
     {
         await this.init();
