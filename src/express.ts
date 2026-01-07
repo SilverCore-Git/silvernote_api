@@ -22,6 +22,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'ut
 import api from './routes/api.js';
 import api_db from './routes/api.db.js';
 import api_ai from './routes/api.ai.js';
+import api_share from './routes/api.share.js';
 import user from './routes/user.js';
 import money from './routes/money.js';
 import admin from './routes/admin.js';
@@ -79,6 +80,7 @@ app.use(clerkMiddleware());
 
 // Routes
 app.use('/api', api);
+app.use('/api/share', api_share);
 app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
