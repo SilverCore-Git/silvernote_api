@@ -13,7 +13,7 @@ export type Layout = ShareOnLayout[];
 export interface Share { 
 
     uuid: string;
-    note_id: string;
+    note_uuid: string;
     owner_id: string;
 
     params: {
