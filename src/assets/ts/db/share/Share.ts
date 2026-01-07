@@ -1,6 +1,7 @@
 import ShareDB from './ShareDB.js';
 import ShareLayout from './ShareLayout.js';
 import type { Share } from './ShareTypes.js';
+import argon2 from "argon2";
 
 class ShareManager
 {
@@ -17,12 +18,7 @@ class ShareManager
     public async add(share: Share)
     {
         await this.db.create_share(share);
-        await this.layout.add_share_to_layout({
-            uuid: share.uuid,
-            owner_id: share.owner_id,
-            created_at: share.created_at,
-            expires_at: share.expires_at
-        });
+        await this.layout.add_share_to_layout(share);
     }
 
     public async get(uuid: string)
@@ -48,6 +44,15 @@ class ShareManager
             share.visitor.push(...users);
             await this.update(share);
         }
+    }
+
+    public async verifyPasswd(uuid: string, passwd: string)
+    {
+        const share = await this.get(uuid);
+        if (share && share.params.passwd) {
+            return await argon2.verify(share.params.passwd, passwd);
+        }
+        return false
     }
 
 }

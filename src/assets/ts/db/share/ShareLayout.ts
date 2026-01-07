@@ -2,7 +2,7 @@ import fs from 'fs';
 const fsp = fs.promises;
 
 import { share_db_layout_path } from "./const.js";
-import type { ShareOnLayout, Layout } from "./ShareTypes.js";
+import type { ShareOnLayout, Layout, Share } from "./ShareTypes.js";
 
 
 class ShareLayout
@@ -35,9 +35,15 @@ class ShareLayout
         await fsp.writeFile(this.layout_path, JSON.stringify(layout, null, 2), 'utf-8');
     }
 
-    public async add_share_to_layout(share: ShareOnLayout): Promise<void>
+    public async add_share_to_layout(share: Share): Promise<void>
     {
         const layout = await this.read_layout();
+        const _share: ShareOnLayout = {
+            uuid: share.uuid,
+            owner_id: share.owner_id,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(new Date(share.created_at).getTime() + share.params.age).toString(),
+        };
         layout.push(share);
         await this.save_layout(layout);
     }

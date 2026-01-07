@@ -1,5 +1,6 @@
 import fs from 'fs';
 const fsp = fs.promises;
+import argon2 from "argon2";
 
 import { share_db_dir_path } from './const.js';
 import type { Share } from './ShareTypes.js';
@@ -31,7 +32,17 @@ class ShareDB
     {
         await this.init();
         const share_path = this.get_share_path(share.uuid);
-        await fsp.writeFile(share_path, JSON.stringify(share, null, 2), 'utf-8');
+        const _share = {
+            ...share,
+            params: {
+                ...share.params,
+                created_at: new Date().toISOString(),
+                passwd: share.params.passwd 
+                    ? await argon2.hash(share.params.passwd)
+                    : undefined
+            }
+        }
+        await fsp.writeFile(share_path, JSON.stringify(_share, null, 2), 'utf-8');
     }
 
     public async get_share(uuid: string): Promise<Share | undefined>
