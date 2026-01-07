@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import type { Note } from '../assets/ts/types.js';
 import notes from '../assets/ts/notes.js';
 import Share from '../assets/ts/db/share/index.js';
@@ -88,6 +88,11 @@ router.post('/create', async (req, res) => {
             await Share.delete(note_uuid);
         }
 
+        const TheShareData = {
+            uuid: note_uuid,
+            owner_id: user_id,
+        }
+
         const TheShare = await Share.add({
 
             uuid: note_uuid,
@@ -104,7 +109,7 @@ router.post('/create', async (req, res) => {
 
         })
 
-        res.json({ success: true, share: TheShare });
+        res.json({ success: true, share: TheShareData });
         return;
 
     }

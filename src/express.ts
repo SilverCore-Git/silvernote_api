@@ -80,7 +80,7 @@ app.use(clerkMiddleware());
 
 // Routes
 app.use('/api', api);
-app.use('/api/share', api_share);
+app.use('/api/share', requireAuth(), api_share);
 app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
