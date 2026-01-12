@@ -51,6 +51,7 @@ class ShareDB
         const files = await fsp.readdir(this.share_db_dir_path);
         const shares: Share[] = [];
         for (const file of files) {
+            if (file == 'layout.json') continue;
             const share_path = `${this.share_db_dir_path}/${file}`;
             const data = await fsp.readFile(share_path, 'utf-8');
             shares.push(JSON.parse(data));

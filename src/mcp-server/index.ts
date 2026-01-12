@@ -119,7 +119,7 @@ server.tool(
   "editing icon of a note",
   {
     uuid: z.string().describe('note uuid'),
-    icon: z.string().describe('new icon of the note on base64 only : data:image/png;base64'),
+    icon: z.string().describe('new icon of the note, link only (ex: emojiapi.dev)'),
   },
   async (parms) => {
     const res = await edit_note_icon(parms);

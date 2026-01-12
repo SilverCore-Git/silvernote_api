@@ -161,6 +161,12 @@ router.get('/for/me', async (req, res) => {
 
         const share_db = await Share.getAll();
 
+        if (!share_db.length)
+        {
+            res.json({ length: 0, notes: null });
+            return;
+        }
+        
         const share_for_me = share_db.filter(share =>
             share.visitor.includes(user_id) && share.owner_id !== user_id);
 
@@ -190,7 +196,8 @@ router.get('/for/me', async (req, res) => {
 
     }
     catch (err) {
-        res.json({ error: true, message: err });
+        res.status(500).json({ error: true, message: (err as any).message });
+        console.error('Error on /db/share/for/me : ', err)
         return;
     }
 
@@ -199,17 +206,24 @@ router.get('/for/me', async (req, res) => {
 
 router.get('/by/me', async (req, res) => {
 
-    const { user_id } = req.cookies;
+    const user_id = req.cookies.user_id || req.signedCookies.user_id;
 
     try {
 
         const share_db = await Share.getAll();
+        
+        const my_share = share_db.filter(share => share.owner_id == user_id);
 
-        const my_share = share_db.filter(share => share.owner_id === user_id);
+        const _notes: (Note | null)[] = await Promise.all(my_share.map(async share => {
+            const note = await notes.getNoteByUUID(share.note_uuid);
+            if (note.success) return note.note;
+            return null;
+        }));
 
         res.json({
             length: my_share.length,
-            share: my_share
+            share: my_share,
+            notes: _notes
         });
 
     }
