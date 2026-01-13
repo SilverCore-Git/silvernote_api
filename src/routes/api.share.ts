@@ -214,11 +214,14 @@ router.get('/by/me', async (req, res) => {
         
         const my_share = share_db.filter(share => share.owner_id == user_id);
 
-        const _notes: (Note | null)[] = await Promise.all(my_share.map(async share => {
-            const note = await notes.getNoteByUUID(share.note_uuid);
-            if (note.success) return note.note;
-            return null;
-        }));
+        let _notes: (Note)[] = [];
+
+        for (const share of my_share)
+        {
+            const __note = await notes.getNoteByUUID(share.note_uuid);
+            if (!__note.note) continue;
+            _notes.push(__note.note);
+        }
 
         res.json({
             length: my_share.length,

@@ -118,7 +118,7 @@ import { randomUUID } from "crypto";
                 method: "DELETE"
             })
 
-            if (res.success) return { success: true };
+            if (res.message == 'tag deleted with success') return { success: true };
             return { error: true, message: "Tag introuvable" };
         }
 
