@@ -16,7 +16,7 @@ import send_to_gemini from './api.ai/send_to_gemini.js';
 const router = Router();
 
 
-let chats: any[] = [];
+let chats: any[] = []; //Chat[] | GeminiChat[]
 
 function verify_auth(req: Request, res: Response, next: NextFunction) {
     next();
@@ -68,7 +68,13 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
 
         res.json({ 
             success: true, 
-            session,
+            session: {
+                ...session,
+                data: {
+                    notes: session.data.notes.length,
+                    tags: session.data.tags.length
+                }
+            },
             mcpConnected: mcpService.isConnected()
         });
         
@@ -78,7 +84,8 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
 });
 
 router.post('/close', verify_auth, async (req: Request, res: Response) => {
-    const { uuid, userID } = req.body;
+    const { uuid } = req.body;
+    const userID = req.cookies.user_id;
 
     try {
         if (!await db.get_user(userID)) {
