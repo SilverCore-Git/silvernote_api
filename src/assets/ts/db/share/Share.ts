@@ -42,11 +42,11 @@ class ShareManager
         await this.db.update_share(share);
     }
 
-    public async addUsersOnShare(uuid: string, users: string[])
+    public async addUsersOnShare(uuid: string, users: string)
     {
         const share = await this.get(uuid);
         if (share) {
-            share.visitor.push(...users);
+            share.visitor.push(users);
             await this.update(share);
         }
     }
