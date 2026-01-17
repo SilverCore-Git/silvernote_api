@@ -19,12 +19,15 @@ export class MCPService {
 
     constructor() {}
 
-    async connect() {
+    async connect()
+    {
+
         if (this.client) {
             return;
         }
 
         try {
+
             console.log('Connecting to MCP server...');
 
             this.client = new Client(
@@ -44,13 +47,16 @@ export class MCPService {
             await this.loadTools();
 
             console.log(`MCP connected! Found ${this.tools.length} tools`);
+
         } catch (error: any) {
             console.error('Failed to connect to MCP:', error.message);
             throw error;
         }
     }
 
-    private async loadTools() {
+    private async loadTools()
+    {
+
         if (!this.client) {
             throw new Error('MCP client not connected');
         }
@@ -69,6 +75,7 @@ export class MCPService {
         }));
 
         console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
+
     }
 
     public getOpenAITools() {
@@ -80,6 +87,7 @@ export class MCPService {
 
     public getGeminiTools() 
     {
+
         if (!this.tools || this.tools.length === 0) {
             return [];
         }
@@ -101,10 +109,12 @@ export class MCPService {
                     parameters: cleanedParameters
                 };
             });
+
     }
 
     private cleanSchemaForGemini(schema: any): any 
     {
+
         if (!schema || typeof schema !== 'object') {
             return schema;
         }
@@ -132,9 +142,12 @@ export class MCPService {
         };
         
         return removeInvalidFields(cleaned);
+
     }
 
-    async callTool(name: string, args: any = {}) {
+    async callTool(name: string, args: any = {})
+    {
+
         if (!this.client) {
             throw new Error('MCP client not connected');
         }
@@ -158,9 +171,12 @@ export class MCPService {
             console.error(`Tool call failed: ${error.message}`);
             throw error;
         }
+
     }
 
-    async handleToolCallsGemini(toolCalls: any[]) {
+    async handleToolCallsGemini(toolCalls: any[])
+    {
+
         const results = [];
 
         for (const toolCall of toolCalls) {
@@ -186,9 +202,12 @@ export class MCPService {
         }
 
         return results;
+
     }
 
-    async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]) {
+    async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[])
+    {
+
         const results = [];
 
         for (const toolCall of toolCalls) {
@@ -213,6 +232,7 @@ export class MCPService {
         }
 
         return results;
+        
     }
 
     isConnected() {
