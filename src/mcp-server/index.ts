@@ -4,9 +4,11 @@ import { z } from "zod";
 
 
 // import tools
-import edit_note_content from "./assets/tools/edit_note_content.js";
-import edit_note_title from "./assets/tools/edit_note_title.js";
-import edit_note_icon from "./assets/tools/edit_note_icon.js";
+import edit_note_content from "./src/tools/edit_note_content.js";
+import edit_note_title from "./src/tools/edit_note_title.js";
+import edit_note_icon from "./src/tools/edit_note_icon.js";
+import notes from "../assets/ts/notes.js";
+import tags from "../assets/ts/tags.js";
 // import get_note from "./assets/tools/get_note";
 
 
@@ -21,55 +23,51 @@ const server = new McpServer({
 });
 
 
-// server.resource(
-//   "note",
-//   "note://{uuid}",
-//   {
-//     title: "Get Note",
-//     description: "Get a specific note by its UUID",
-//     mimeType: "application/json",
-//   },
-//   async (uri) => {
-//     const uuid = uri.pathname.replace("/", "");
-//     console.log(uuid)
+// get note
+server.resource(
+  "note",
+  "note:///{uuid}",
+  async (uri: URL) => {
+    // Extract uuid from the URI path
+    const pathParts = uri.pathname.split('/').filter(Boolean);
+    const uuid = pathParts[0];
 
-//     return {
-//       contents: [
-//         {
-//           uri: uri.href, // 👈 Obligatoire
-//           mimeType: "application/json",
-//           text: JSON.stringify({}, null, 2),
-//         },
-//       ],
-//     };
-//   }
-// );
+    const note = await notes.getNoteByUUID(uuid);
 
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(note, null, 2),
+        },
+      ],
+    };
+  }
+);
 
-// server.tool(
-//   "get_note",
-//   "get note by uuid or title",
-//   {
-//     uuid: z.string().describe('note uuid for find note').optional(),
-//     title: z.string().describe('note title for find them with userid too').optional(),
-//     userId: z.string().describe('client userid for find note by title').optional(),
-//   },
-//   async (params) => {
-//     const res = await get_note(params);
-//     return {
-//       content: [
-//         {
-//           type: "json",
-//           text: JSON.stringify(
-//             res?.note ?? { notFound: true },
-//             null,
-//             2
-//           ),
-//         },
-//       ],
-//     };
-//   }
-// );
+// get tag
+server.resource(
+  "tag",
+  "tag:///{uuid}",
+  async (uri: URL) => {
+    // Extract uuid from the URI path
+    const pathParts = uri.pathname.split('/').filter(Boolean);
+    const uuid = pathParts[0];
+
+    const tag = await tags.getTagByUUID(uuid);
+
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(tag, null, 2),
+        },
+      ],
+    };
+  }
+);
 
 
 // edit a note => content
@@ -79,7 +77,7 @@ server.tool(
   {
     uuid: z.string().describe('note uuid'),
     content: z.string().describe('the content to insert on the note'),
-    pos: z.number().describe('la position où le contenu sera inséré correspond à un certain nombre de caractères.')
+    pos: z.number().describe('the position where the content will be inserted corresponds to a certain number of characters.')
   },
   async (parms) => {
     const res = await edit_note_content(parms);

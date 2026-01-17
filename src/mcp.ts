@@ -13,9 +13,12 @@ const MCP_CONFIG = {
 };
 
 export class MCPService {
+
     private client: Client | null = null;
     private tools: any[] = [];
+    private resources: any[] = [];
     private openaiTools: any[] = [];
+    private openaiResources: any[] = [];
 
     constructor() {}
 
@@ -45,8 +48,10 @@ export class MCPService {
 
             // Charger les outils
             await this.loadTools();
+            await this.loadResources();
 
             console.log(`MCP connected! Found ${this.tools.length} tools`);
+            console.log(`MCP connected! Found ${this.resources.length} resources`);
 
         } catch (error: any) {
             console.error('Failed to connect to MCP:', error.message);
@@ -75,6 +80,31 @@ export class MCPService {
         }));
 
         console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
+
+    }
+
+    private async loadResources()
+    {
+
+        if (!this.client) {
+            throw new Error('MCP client not connected');
+        }
+
+        const resourcesResponse = await this.client.listResources();
+        this.resources = resourcesResponse.resources || [];
+
+        // Convertir en format OpenAI
+        this.openaiResources = this.resources.map(resource => ({
+            type: 'resource' as const,
+            resource: {
+                uri: resource.uri,
+                name: resource.name,
+                description: resource.description,
+                mimeType: resource.mimeType,
+            },
+        }));
+
+        console.log(`Loaded resources : ${this.resources.map(t => t.name).join(', ')}`);
 
     }
 
