@@ -6,19 +6,26 @@ import { z } from "zod";
 const get_user_notes: Tool = {
 
     name: "get_user_notes",
-    description: "Get user notes by user id",
+    description: "Get user notes by user id with pagination (page/limit)",
 
     params: {
-        userID: z.string().describe('user id'),
-        start: z.number().describe('start index'),
-        end: z.number().describe('end index')
+        userID: z.string(),
+        page: z.number().optional().default(0),
+        limit: z.number().optional().default(20)
     },
 
     handler: async (parms) => {
 
-        const note = (await notes.getNoteByUserId(parms.userID)).notes;
-        const slicedNotes = note.slice(parms.start, parms.end);
-        
+        const allNotes = (await notes.getNoteByUserId(parms.userID)).notes;
+
+        const MAX_LIMIT = 20;
+        const limit = Math.min(parms.limit || 20, MAX_LIMIT);
+
+        const start = parms.page * limit;
+        const end = start + limit;
+
+        const slicedNotes = allNotes.slice(start, end);
+
         return {
             content: [
                 {
@@ -29,7 +36,7 @@ const get_user_notes: Tool = {
         };
 
     }
-
+    
 }
 
 
