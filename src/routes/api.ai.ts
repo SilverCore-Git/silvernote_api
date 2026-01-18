@@ -1,4 +1,4 @@
-import { UUID, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -6,12 +6,9 @@ import __dirname from '../assets/ts/_dirname.js';
 const _config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/jeremy_ai.json'), 'utf-8'))
 const prompt_system = _config.prompt_system;
 import db from '../assets/ts/database.js';
-import notes_db from '../assets/ts/notes.js';
-import tags_db from '../assets/ts/tags.js';
 import { getMCPService } from '../mcp.js';
 import send_to_chatgpt from './api.ai/send_to_chatgpt.js';
 import { Chat } from './api.ai/types.js';
-import send_to_gemini from './api.ai/send_to_gemini.js';
 
 const router = Router();
 
@@ -65,7 +62,7 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
     } catch (err: any) {
         res.status(500).json({ error: true, message: err.message });
     }
-    
+
 });
 
 router.post('/close', verify_auth, async (req: Request, res: Response) => {
@@ -96,7 +93,7 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
     }
     else
     {
-        send_to_gemini(req, res, chats);
+        //send_to_gemini(req, res, chats);
     }
 
 });
