@@ -371,26 +371,6 @@ export class MCPService {
 
     }
 
-
-    async loadContextResources(noteUuid?: string): Promise<string>
-    {
-
-        const contextParts: string[] = [];
-
-        // Charger la note si fournie
-        if (noteUuid) {
-            const noteUri = `note:///${noteUuid}`;
-            const noteContent = await this.getResourceContext(noteUri);
-            
-            if (noteContent) {
-                contextParts.push(`Note actuelle (UUID: ${noteUuid}):\n${noteContent}`);
-            }
-        }
-
-        return contextParts.join('\n\n');
-
-    }
-
     
     isConnected(): boolean {
         return this.client !== null;

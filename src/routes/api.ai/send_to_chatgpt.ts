@@ -30,17 +30,10 @@ export default async function send_to_chatgpt
         const mcpService = getMCPService();
         await mcpService.ensureConnected();
 
-        // Charger le contexte des resources (note si présente)
-        let resourceContext = '';
-        if (note) {
-            console.log(`Loading context for note: ${note}`);
-            resourceContext = await mcpService.loadContextResources(note);
-        }
-
         // Construire le message utilisateur avec le contexte
-        const userMessage = resourceContext
-            ? `${resourceContext}\n\nMessage de l'utilisateur: ${message}`
-            : `Message de l'utilisateur: ${message}`;
+        const userMessage = note 
+            ? `L'utilisateur est dans la note qui porte comme uuid : ${note}. \n\n Message de l'utilisateur: ${message}` 
+            : `Message de l'utilisateur: ${message}` 
 
         // Ajouter le message à l'historique du chat
         chat.messages.push({

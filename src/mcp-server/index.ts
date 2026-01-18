@@ -26,19 +26,6 @@ tools.forEach((tool: Tool) => {
 });
 
 
-
-// resources
-import resources from "./src/resources/index.js";
-import { Resource } from "./MCPTypes.js";
-resources.forEach((resource: Resource) => {
-  server.resource(
-    resource.name,
-    resource.url,
-    resource.handler
-  )
-});
-
-
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
