@@ -1,6 +1,7 @@
 import nodeFetch from 'node-fetch';
 import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
+import 'dotenv/config';
 
     class Notes {
 
@@ -42,7 +43,7 @@ import { randomUUID } from "crypto";
 
                 if (!res.ok) {
                     const errorText = await res.text();
-                    console.error(`Erreur API ${res.status}:`, errorText);
+                    console.error(`Erreur API ${res.status} : `, errorText);
                     return null;
                 }
 

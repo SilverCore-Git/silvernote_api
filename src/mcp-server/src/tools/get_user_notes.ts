@@ -9,18 +9,21 @@ const get_user_notes: Tool = {
     description: "Get user notes by user id",
 
     params: {
-        userID: z.string().describe('user id')
+        userID: z.string().describe('user id'),
+        start: z.number().describe('start index'),
+        end: z.number().describe('end index')
     },
 
     handler: async (parms) => {
 
         const note = (await notes.getNoteByUserId(parms.userID)).notes;
+        const slicedNotes = note.slice(parms.start, parms.end);
         
         return {
             content: [
                 {
                     type: "text",
-                    text: JSON.stringify(note, null, 2),
+                    text: JSON.stringify(slicedNotes, null, 2),
                 },
             ],
         };

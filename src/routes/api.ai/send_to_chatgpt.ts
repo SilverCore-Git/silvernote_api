@@ -178,8 +178,6 @@ export default async function send_to_chatgpt
                         ? contentStr.substring(0, 100) + '...' 
                         : contentStr;
                     
-                    console.log(`Tool ${toolName} result: ${preview}`);
-                    
                     res.write(`data: ${JSON.stringify({ 
                         type: 'tool_result', 
                         tool: toolName,
