@@ -16,9 +16,9 @@ const get_note: Resource = {
         return {
             contents: [
                 {
-                uri: uri.href,
-                mimeType: "application/json",
-                text: JSON.stringify(note, null, 2),
+                    uri: uri.href,
+                    mimeType: "application/json",
+                    text: JSON.stringify(note, null, 2),
                 },
             ],
         };
