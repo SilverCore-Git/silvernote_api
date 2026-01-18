@@ -1,6 +1,10 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import OpenAI from 'openai';
+import { 
+    ChatCompletionTool, 
+    ChatCompletionMessageToolCall, 
+    ChatCompletionToolMessageParam 
+} from 'openai/resources/chat/completions';
 
 // Configuration MCP
 const MCP_CONFIG = {
@@ -12,17 +16,32 @@ const MCP_CONFIG = {
     ]
 };
 
+interface MCPResource {
+    uri?: string;
+    uriTemplate?: string;
+    name: string;
+    description?: string;
+    mimeType?: string;
+}
+
+interface ResourceContent {
+    uri: string;
+    mimeType?: string;
+    text?: string;
+    blob?: string;
+}
+
 export class MCPService {
 
     private client: Client | null = null;
-    private tools: any[] = [];
-    private resources: any[] = [];
-    private openaiTools: any[] = [];
-    private openaiResources: any[] = [];
+    private openaiTools: ChatCompletionTool[] = [];
+    private resources: MCPResource[] = [];
+    private resourceTemplates: MCPResource[] = [];
 
     constructor() {}
 
-    async connect()
+
+    async connect(): Promise<void>
     {
 
         if (this.client) {
@@ -30,28 +49,28 @@ export class MCPService {
         }
 
         try {
-
             console.log('Connecting to MCP server...');
 
             this.client = new Client(
                 {
-                    name: 'silvernote-ai-client',
+                    name: 'openai-mcp-client',
                     version: '1.0.0',
                 },
                 {
-                    capabilities: {},
+                    capabilities: {
+                        tools: {},
+                        resources: {},
+                    },
                 }
             );
 
             const transport = new StdioClientTransport(MCP_CONFIG);
             await this.client.connect(transport);
 
-            // Charger les outils
             await this.loadTools();
             await this.loadResources();
 
-            console.log(`MCP connected! Found ${this.tools.length} tools`);
-            console.log(`MCP connected! Found ${this.resources.length} resources`);
+            console.log(`MCP connected! Ready for OpenAI.`);
 
         } catch (error: any) {
             console.error('Failed to connect to MCP:', error.message);
@@ -59,123 +78,208 @@ export class MCPService {
         }
     }
 
-    private async loadTools()
+
+    private async loadTools(): Promise<void>
     {
 
         if (!this.client) {
             throw new Error('MCP client not connected');
         }
 
-        const toolsResponse = await this.client.listTools();
-        this.tools = toolsResponse.tools || [];
+        try {
 
-        // Convertir en format OpenAI
-        this.openaiTools = this.tools.map(tool => ({
-            type: 'function' as const,
-            function: {
-                name: tool.name,
-                description: tool.description,
-                parameters: tool.inputSchema,
-            },
-        }));
+            const toolsResponse = await this.client.listTools();
+            const rawTools = toolsResponse.tools || [];
 
-        console.log(`Loaded tools: ${this.tools.map(t => t.name).join(', ')}`);
+            // Conversion au format strict OpenAI (ChatCompletionTool)
+            this.openaiTools = rawTools.map(tool => ({
+                type: 'function' as const,
+                function: {
+                    name: tool.name,
+                    description: tool.description || '',
+                    parameters: tool.inputSchema as Record<string, unknown>,
+                },
+            }));
+
+            const toolNames = this.openaiTools
+                .map(t => (t.type === 'function' ? t.function.name : 'unknown'))
+                .join(', ');
+            console.log(`Loaded ${this.openaiTools.length} tools: ${toolNames}`);
+
+        } catch (error: any) {
+            console.error('Failed to load tools:', error.message);
+            this.openaiTools = [];
+        }
 
     }
 
-    private async loadResources()
+
+    private async loadResources(): Promise<void>
     {
 
         if (!this.client) {
             throw new Error('MCP client not connected');
         }
 
-        const resourcesResponse = await this.client.listResources();
-        this.resources = resourcesResponse.resources || [];
+        try {
 
-        // Convertir en format OpenAI
-        this.openaiResources = this.resources.map(resource => ({
-            type: 'resource' as const,
-            resource: {
-                uri: resource.uri,
-                name: resource.name,
-                description: resource.description,
-                mimeType: resource.mimeType,
-            },
-        }));
+            const resourcesResponse = await this.client.listResources();
+            const rawResources = resourcesResponse.resources || [];
 
-        console.log(`Loaded resources : ${this.resources.map(t => t.name).join(', ')}`);
+            // Séparer les resources statiques et les templates
+            this.resources = rawResources
+                .filter(r => r.uri && !r.uri.includes('{'))
+                .map(resource => ({
+                    uri: resource.uri,
+                    name: resource.name,
+                    description: resource.description,
+                    mimeType: resource.mimeType,
+                }));
+
+            this.resourceTemplates = rawResources
+                .filter(r => r.uri && r.uri.includes('{'))
+                .map(resource => ({
+                    uriTemplate: resource.uri,
+                    name: resource.name,
+                    description: resource.description,
+                    mimeType: resource.mimeType,
+                }));
+
+            console.log(`Loaded ${this.resources.length} static resources and ${this.resourceTemplates.length} resource templates.`);
+
+        } catch (error: any) {
+            console.error('Failed to load resources:', error.message);
+            this.resources = [];
+            this.resourceTemplates = [];
+        }
 
     }
 
-    public getOpenAITools() {
-        return this.openaiTools.map(tool => ({
-            ...tool,
-            resources: ["note://*"],
-        }));
+
+    public getOpenAITools(): ChatCompletionTool[] {
+        return this.openaiTools;
     }
 
-    public getGeminiTools() 
+
+    public getResources(): MCPResource[] {
+        return this.resources;
+    }
+
+
+    public getResourceTemplates(): MCPResource[] {
+        return this.resourceTemplates;
+    }
+
+
+    async readResource(uri: string): Promise<ResourceContent | null>
     {
 
-        if (!this.tools || this.tools.length === 0) {
-            return [];
+        if (!this.client) {
+            throw new Error('MCP client not connected');
         }
-        
-        return this.tools
-            .filter(tool => tool && (tool.function?.name || tool.name))
-            .map(tool => {
-                const isOpenAIFormat = 'function' in tool;
-                
-                const parameters = isOpenAIFormat 
-                    ? tool.function.parameters 
-                    : (tool.inputSchema || tool.parameters || {});
-                
-                const cleanedParameters = this.cleanSchemaForGemini(parameters);
-                
+
+        try {
+            console.log(`Reading resource: ${uri}`);
+
+            const result = await this.client.readResource({ uri });
+
+            if (result.contents && result.contents.length > 0) {
+                const content = result.contents[0];
                 return {
-                    name: isOpenAIFormat ? tool.function.name : tool.name,
-                    description: isOpenAIFormat ? tool.function.description : tool.description,
-                    parameters: cleanedParameters
+                    uri: content.uri,
+                    mimeType: content.mimeType,
+                    text: typeof content.text === 'string' ? content.text : undefined,
+                    blob: typeof content.blob === 'string' ? content.blob : undefined,
                 };
-            });
+            }
+
+            return null;
+        } catch (error: any) {
+            console.error(`Failed to read resource ${uri}:`, error.message);
+            return null;
+        }
 
     }
 
-    private cleanSchemaForGemini(schema: any): any 
+
+    async readResources(uris: string[]): Promise<Map<string, ResourceContent>>
     {
 
-        if (!schema || typeof schema !== 'object') {
-            return schema;
-        }
-        
-        const cleaned = JSON.parse(JSON.stringify(schema));
-        
-        const removeInvalidFields = (obj: any): any => {
-            if (Array.isArray(obj)) {
-                return obj.map(removeInvalidFields);
-            }
-            
-            if (obj && typeof obj === 'object') {
-                
-                delete obj.$schema;
-                delete obj.additionalProperties;
-                delete obj.$defs;
-                delete obj.definitions;
-                
-                for (const key in obj) {
-                    obj[key] = removeInvalidFields(obj[key]);
+        const results = new Map<string, ResourceContent>();
+
+        await Promise.all(
+            uris.map(async (uri) => {
+                const content = await this.readResource(uri);
+                if (content) {
+                    results.set(uri, content);
                 }
-            }
-            
-            return obj;
-        };
-        
-        return removeInvalidFields(cleaned);
+            })
+        );
+
+        return results;
 
     }
 
-    async callTool(name: string, args: any = {})
+
+    public getResourcesSystemPrompt(): string
+    {
+
+        const allResources = [
+            ...this.resources.map(r => ({
+                name: r.name,
+                uri: r.uri,
+                description: r.description || 'No description',
+            })),
+            ...this.resourceTemplates.map(r => ({
+                name: r.name,
+                uri: r.uriTemplate,
+                description: r.description || 'No description',
+            })),
+        ];
+
+        if (allResources.length === 0) {
+            return '';
+        }
+
+        return `\n\nResources disponibles:\n${allResources
+            .map(r => `- ${r.name}: ${r.description} (URI: ${r.uri})`)
+            .join('\n')}`;
+
+    }
+
+
+    async getResourceContext(uri: string): Promise<string>
+    {
+
+        const content = await this.readResource(uri);
+        
+        if (!content) {
+            return '';
+        }
+
+        let text = content.text || '';
+        
+        // Si c'est du blob, on le convertit en base64 info (pas le contenu complet)
+        if (content.blob && !text) {
+            text = `[Binary content: ${content.mimeType || 'unknown type'}]`;
+        }
+
+        // Parser le JSON si c'est du JSON
+        if (content.mimeType === 'application/json' && text) {
+            try {
+                const parsed = JSON.parse(text);
+                text = JSON.stringify(parsed, null, 2);
+            } catch {
+                // Garder le texte tel quel si le parsing échoue
+            }
+        }
+
+        return text;
+
+    }
+
+
+    async callTool(name: string, args: any = {}): Promise<string>
     {
 
         if (!this.client) {
@@ -185,18 +289,30 @@ export class MCPService {
         try {
             console.log(`Calling MCP tool: ${name}`, args);
 
-            const result: any = await this.client.callTool({
+            const result = await this.client.callTool({
                 name,
                 arguments: args,
             });
 
-            const resultText = (result as any).content
-                .map((c: any) => c.type === 'text' ? c.text : JSON.stringify(c))
-                .join('\n');
+            // Convertir le résultat en texte pour OpenAI
+            const contents = Array.isArray(result.content) ? result.content : [result.content];
+            
+            const resultText = contents
+                .map((c: any) => {
+                    if (c.type === 'text') {
+                        return c.text;
+                    } else if (c.type === 'resource') {
+                        return `Resource: ${c.resource?.uri || 'unknown'}\n${c.resource?.text || ''}`;
+                    } else {
+                        return JSON.stringify(c);
+                    }
+                })
+                .join('\n\n');
 
-            console.log(`Tool result: ${resultText}`);
+            console.log(`Tool ${name} executed successfully (${resultText.length} chars)`);
 
             return resultText;
+
         } catch (error: any) {
             console.error(`Tool call failed: ${error.message}`);
             throw error;
@@ -204,29 +320,49 @@ export class MCPService {
 
     }
 
-    async handleToolCallsGemini(toolCalls: any[])
+
+    async handleToolCalls(toolCalls: ChatCompletionMessageToolCall[]): Promise<ChatCompletionToolMessageParam[]>
     {
 
-        const results = [];
+        const results: ChatCompletionToolMessageParam[] = [];
 
         for (const toolCall of toolCalls) {
-            const name = toolCall.function.name;
-            const args = JSON.parse(toolCall.function.arguments);
+            // Vérifier que c'est bien un appel de fonction
+            if (toolCall.type !== 'function') {
+                continue;
+            }
+
+            const functionName = toolCall.function.name;
+            let functionArgs: any = {};
 
             try {
-                const result = await this.callTool(name, args);
-
+                functionArgs = JSON.parse(toolCall.function.arguments);
+            } catch (parseError) {
+                console.error(`Failed to parse tool arguments for ${functionName}:`, parseError);
                 results.push({
-                    role: 'function',
-                    name: name,
-                    content: result
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: `Error: Invalid JSON arguments`,
                 });
+                continue;
+            }
 
-            } catch (error: any) {
+            try {
+                // Exécution de l'outil
+                const content = await this.callTool(functionName, functionArgs);
+
+                // Ajout du résultat au format attendu par OpenAI (role: tool)
                 results.push({
-                    role: 'function',
-                    name: name,
-                    content: `Error: ${error.message}`
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: content,
+                });
+            } catch (error: any) {
+                // En cas d'erreur, on renvoie l'erreur au modèle pour qu'il puisse se corriger
+                results.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: `Error executing tool ${functionName}: ${error.message}`,
                 });
             }
         }
@@ -235,58 +371,62 @@ export class MCPService {
 
     }
 
-    async handleToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[])
+
+    async loadContextResources(noteUuid?: string): Promise<string>
     {
 
-        const results = [];
+        const contextParts: string[] = [];
 
-        for (const toolCall of toolCalls) {
-            const functionName = (toolCall as any).function.name;
-            const functionArgs = JSON.parse((toolCall as any).function.arguments);
-
-            try {
-                const result = await this.callTool(functionName, functionArgs);
-                
-                results.push({
-                    role: 'tool' as const,
-                    tool_call_id: toolCall.id,
-                    content: result,
-                });
-            } catch (error: any) {
-                results.push({
-                    role: 'tool' as const,
-                    tool_call_id: toolCall.id,
-                    content: `Error: ${error.message}`,
-                });
+        // Charger la note si fournie
+        if (noteUuid) {
+            const noteUri = `note:///${noteUuid}`;
+            const noteContent = await this.getResourceContext(noteUri);
+            
+            if (noteContent) {
+                contextParts.push(`Note actuelle (UUID: ${noteUuid}):\n${noteContent}`);
             }
         }
 
-        return results;
-        
+        return contextParts.join('\n\n');
+
     }
 
-    isConnected() {
+    
+    isConnected(): boolean {
         return this.client !== null;
     }
 
-    async disconnect() {
+    async disconnect(): Promise<void> {
         if (this.client) {
             await this.client.close();
             this.client = null;
-            this.tools = [];
             this.openaiTools = [];
+            this.resources = [];
+            this.resourceTemplates = [];
             console.log('MCP client disconnected');
         }
     }
 
-    async ensureConnected() {
+    async ensureConnected(): Promise<void> {
         if (!this.isConnected()) {
             await this.connect();
         }
     }
 
+
+    async reload(): Promise<void> {
+        if (!this.client) {
+            throw new Error('MCP client not connected');
+        }
+
+        await this.loadTools();
+        await this.loadResources();
+        console.log('MCP tools and resources reloaded');
+    }
+    
 }
 
+// Singleton
 let mcpServiceInstance: MCPService | null = null;
 
 export function getMCPService(): MCPService {
