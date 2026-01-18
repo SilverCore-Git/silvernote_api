@@ -24,11 +24,10 @@ function verify_auth(req: Request, res: Response, next: NextFunction) {
 
 
 router.post('/create', verify_auth, async (req: Request, res: Response) => {
+
     const { user } = req.body;
 
     try {
-        const notes = await notes_db.getNoteByUserId(user.id);
-        const tags = await tags_db.getTagsByUserId(user.id);
 
         if (!await db.exist_user(user.id)) {
             res.status(400).json({ 
@@ -40,11 +39,6 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
             return;
         }
 
-        const truncatedNotes = notes.notes.map(note => ({
-            ...note,
-            content: note.content?.slice(0, 1000) + '...'
-        }));
-
         // S'assurer que MCP est connecté
         const mcpService = getMCPService();
         await mcpService.ensureConnected();
@@ -52,14 +46,10 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
         const session: Chat = { 
             uuid: randomUUID(),
             userID: user.id,
-            data: {
-                notes,
-                tags
-            },
             messages: [
                 { 
                     role: "system", 
-                    content: `${prompt_system}. L'utilisateur se nome : ${user.fullName}. Voici les donnés de l'utilisateur en format json : notes: ${JSON.stringify(truncatedNotes)} tags: ${JSON.stringify(tags.tags)}` 
+                    content: `${prompt_system}. L'utilisateur se nome : ${user.fullName}. Son userID est : ${user.id}.` 
                 }
             ]
         };
@@ -68,19 +58,14 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
 
         res.json({ 
             success: true, 
-            session: {
-                ...session,
-                data: {
-                    notes: session.data.notes.length,
-                    tags: session.data.tags.length
-                }
-            },
+            session,
             mcpConnected: mcpService.isConnected()
         });
         
     } catch (err: any) {
         res.status(500).json({ error: true, message: err.message });
     }
+    
 });
 
 router.post('/close', verify_auth, async (req: Request, res: Response) => {

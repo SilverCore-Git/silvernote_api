@@ -1,6 +1,5 @@
 import notes from "../../../assets/ts/notes.js";
 import { Tool } from "../../MCPTypes.js";
-import useWS from "../utils/useWS.js";
 import { z } from "zod";
 
 
