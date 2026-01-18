@@ -1,14 +1,33 @@
+import { Tool } from "../../MCPTypes.js";
 import useWS from "../utils/useWS.js";
+import { z } from "zod";
 
-export default async function edit_note_title 
-(parms: { uuid: string, icon: string })
-{
+export const edit_note_icon: Tool = {
 
-    const { socket } = useWS();
+    name: "edit_note_icon",
+    description: "editing icon of a note",
 
-    socket.emit('icon-update', parms.icon);
+    params: z.object({
+        uuid: z.string().describe('note uuid'),
+        icon: z.string().describe('new icon of the note, link only (ex: emojiapi.dev)'),
+    }),
 
-    return {
-        message: "Icon de la note mis a jours."
+    handler: async (parms) => {
+
+        const { socket } = useWS(parms.uuid);
+
+        socket.emit('icon-update', parms.icon);
+
+
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: 'Icon de la note mis a jours.',
+                },
+            ],
+        };
+
     }
+
 }

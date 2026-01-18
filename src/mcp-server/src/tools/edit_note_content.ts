@@ -1,19 +1,38 @@
+import { Tool } from "../../MCPTypes.js";
 import useWS from "../utils/useWS.js";
+import { z } from "zod";
 
-export default async function edit_note_content
-(parms: { uuid: string, content: string, pos: number })
-{
 
-    const { socket } = useWS();
+export const edit_note_content: Tool = {
 
-    socket.emit('ai-command', {
-        command: 'insertContent',
-        content: parms.content,
-        pos: parms.pos
-    })
+    name: "edit_note_content",
+    description: "editing content of a note",
 
-    return {
-        message: "Contenu de la note mis a jours."
+    params: z.object({
+        uuid: z.string().describe('note uuid'),
+        content: z.string().describe('the content to insert on the note'),
+        pos: z.number().describe('the position where the content will be inserted corresponds to a certain number of characters.')
+    }),
+
+    handler: async (parms) => {
+
+        const { socket } = useWS(parms.uuid);
+
+        socket.emit('ai-command', {
+            command: 'insertContent',
+            content: parms.content,
+            pos: parms.pos
+        })
+
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: 'Contenu de la note mis a jours.',
+                },
+            ],
+        };
+
     }
 
 }
