@@ -8,6 +8,8 @@ import get_user_notes from "./get_user_notes.js";
 import get_user_tags from "./get_user_tags.js";
 import get_note from "./get_note.js";
 import get_tag from "./get_tag.js";
+import get_user_notes_length from "./get_user_notes_length.js";
+import get_user_tags_length from "./get_user_tags_length.js";
 
 
 export default [
@@ -20,5 +22,7 @@ export default [
     get_user_notes,
     get_user_tags,
     get_note,
-    get_tag
+    get_tag,
+    get_user_notes_length,
+    get_user_tags_length
 ]
