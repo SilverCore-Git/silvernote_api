@@ -2,15 +2,16 @@ import { Tool } from "../../MCPTypes.js";
 import useWS from "../utils/useWS.js";
 import { z } from "zod";
 
-export const edit_note_icon: Tool = {
+
+const edit_note_icon: Tool = {
 
     name: "edit_note_icon",
     description: "editing icon of a note",
 
-    params: z.object({
+    params: {
         uuid: z.string().describe('note uuid'),
         icon: z.string().describe('new icon of the note, link only (ex: emojiapi.dev)'),
-    }),
+    },
 
     handler: async (parms) => {
 
@@ -31,3 +32,6 @@ export const edit_note_icon: Tool = {
     }
 
 }
+
+
+export default edit_note_icon;

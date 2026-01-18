@@ -3,15 +3,15 @@ import useWS from "../utils/useWS.js";
 import { z } from "zod";
 
 
-export const edit_note_title: Tool = {
+const edit_note_title: Tool = {
 
     name: "edit_note_title",
     description: "editing icon of a note",
 
-    params: z.object({
+    params: {
         uuid: z.string().describe('note uuid'),
         title: z.string().describe('new title of the note'),
-    }),
+    },
 
     handler: async (parms) => {
 
@@ -31,3 +31,5 @@ export const edit_note_title: Tool = {
     }
 
 }
+
+export default edit_note_title;

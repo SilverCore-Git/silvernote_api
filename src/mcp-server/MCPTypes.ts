@@ -22,23 +22,12 @@ export interface ResourceContent {
 
 
 
-export interface Tool<TInput = any> {
-    name: string;
-    description: string;
-    params: z.ZodObject<z.ZodRawShape> | z.ZodType<TInput>;
-    handler: (params: TInput) => Promise<ToolResponse>;
+export interface Tool<TParams extends z.ZodRawShape = z.ZodRawShape> {
+  name: string;
+  description: string;
+  params: TParams;
+  handler: (
+    params: z.infer<z.ZodObject<TParams>>
+  ) => Promise<any>;
 }
 
-
-export interface ToolResponse {
-  content: ToolContent[];
-  isError?: boolean;
-}
-
-interface ToolContent {
-  type: "text" | "image" | "resource";
-  text?: string;
-  data?: string;
-  mimeType?: string;
-  resource?: string;
-}
