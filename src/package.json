@@ -1,6 +1,6 @@
 {
   "name": "silvernote_back",
-  "version": "0.3.0-beta",
+  "version": "1.0.0-beta",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@tiptap/starter-kit": "^3.5.1",
     "@types/express": "^5.0.3",
+    "argon2": "^0.44.0",
     "axios": "^1.13.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

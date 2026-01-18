@@ -6,7 +6,7 @@ import { z } from "zod";
 const get_user_notes: Tool = {
 
     name: "get_user_notes",
-    description: "Get user notes by user id with pagination (page/limit)",
+    description: "Get user notes by user id with pagination option (page and limit). Limit is limited to 20",
 
     params: {
         userID: z.string(),
@@ -36,7 +36,7 @@ const get_user_notes: Tool = {
         };
 
     }
-    
+
 }
 
 
