@@ -1,6 +1,7 @@
 import nodeFetch from 'node-fetch';
 import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
+import 'dotenv/config';
 
     class Notes {
 
@@ -20,28 +21,39 @@ import { randomUUID } from "crypto";
             });
         }  
 
-        private async fetch (
+        private async fetch(
             path: string, 
-            opt
-                : { 
-                    method?: 'POST' | 'GET' | 'DELETE', 
-                    body?: string 
-                } 
-                = {
-                    method: 'GET'
+            opt: { 
+                method?: 'POST' | 'GET' | 'DELETE', 
+                body?: string 
+            } = { method: 'GET' }
+        ): Promise<any> {
+
+            try {
+
+                const res = await nodeFetch('https://db.silvernote.fr/notes' + path, { 
+                    method: opt.method || 'GET',
+                    body: opt.body,
+                    headers: {
+                        "Authorization": process.env.DB_API_SK_1 || "",
+                        "X-API-Key": process.env.DB_API_SK_2 || "",
+                        "Content-Type": "application/json"
+                    },
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error(`Erreur API ${res.status} : `, errorText);
+                    return null;
                 }
-        ): Promise<any>
-        {
-            const res = await nodeFetch('https://db.silvernote.fr/notes' + path, { 
-                ...opt,
-                headers: {
-                    "Authorization": process.env.DB_API_SK_1 || "",
-                    "X-API-Key": process.env.DB_API_SK_2 || "",
-                    "Content-Type": "application/json"
-                },
-            }).then(res => res.json());
-            //console.log('/notes' + path + ' :\n' + JSON.stringify(res));
-            return res;
+
+                return await res.json();
+
+            } catch (error) {
+                console.error("Erreur réseau/fetch:", error);
+                return null;
+            }
+            
         }
 
         public async createNote(note: Note) {
@@ -55,7 +67,7 @@ import { randomUUID } from "crypto";
                 body: JSON.stringify({ note })
             })
 
-            return { success: res._id ? true : false, note };
+            return { success: res?._id ? true : false, note };
             
         }
 

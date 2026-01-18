@@ -1,13 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-
-
-// import tools
-import edit_note_content from "./assets/tools/edit_note_content.js";
-import edit_note_title from "./assets/tools/edit_note_title.js";
-import edit_note_icon from "./assets/tools/edit_note_icon.js";
-// import get_note from "./assets/tools/get_note";
 
 
 // Create server instance
@@ -21,119 +13,17 @@ const server = new McpServer({
 });
 
 
-// server.resource(
-//   "note",
-//   "note://{uuid}",
-//   {
-//     title: "Get Note",
-//     description: "Get a specific note by its UUID",
-//     mimeType: "application/json",
-//   },
-//   async (uri) => {
-//     const uuid = uri.pathname.replace("/", "");
-//     console.log(uuid)
-
-//     return {
-//       contents: [
-//         {
-//           uri: uri.href, // 👈 Obligatoire
-//           mimeType: "application/json",
-//           text: JSON.stringify({}, null, 2),
-//         },
-//       ],
-//     };
-//   }
-// );
-
-
-// server.tool(
-//   "get_note",
-//   "get note by uuid or title",
-//   {
-//     uuid: z.string().describe('note uuid for find note').optional(),
-//     title: z.string().describe('note title for find them with userid too').optional(),
-//     userId: z.string().describe('client userid for find note by title').optional(),
-//   },
-//   async (params) => {
-//     const res = await get_note(params);
-//     return {
-//       content: [
-//         {
-//           type: "json",
-//           text: JSON.stringify(
-//             res?.note ?? { notFound: true },
-//             null,
-//             2
-//           ),
-//         },
-//       ],
-//     };
-//   }
-// );
-
-
-// edit a note => content
-server.tool(
-  "edit_note_content",
-  "editing content of a note",
-  {
-    uuid: z.string().describe('note uuid'),
-    content: z.string().describe('the content to insert on the note'),
-    pos: z.number().describe('la position où le contenu sera inséré correspond à un certain nombre de caractères.')
-  },
-  async (parms) => {
-    const res = await edit_note_content(parms);
-    return {
-      content: [
-        {
-          type: "text",
-          text: res.message,
-        },
-      ],
-    };
-  }
-)
-
-server.tool(
-  "edit_note_title",
-  "editing icon of a note",
-  {
-    uuid: z.string().describe('note uuid'),
-    title: z.string().describe('new title of the note'),
-  },
-  async (parms) => {
-    const res = await edit_note_title(parms);
-    return {
-      content: [
-        {
-          type: "text",
-          text: res.message,
-        },
-      ],
-    };
-  }
-)
-
-server.tool(
-  "edit_note_icon",
-  "editing icon of a note",
-  {
-    uuid: z.string().describe('note uuid'),
-    icon: z.string().describe('new icon of the note on base64 only : data:image/png;base64'),
-  },
-  async (parms) => {
-    const res = await edit_note_icon(parms);
-    return {
-      content: [
-        {
-          type: "text",
-          text: res.message,
-        },
-      ],
-    };
-  }
-)
-
+// tools 
+import tools from "./src/tools/index.js";
+import { Tool } from "./MCPTypes.js";
+tools.forEach((tool: Tool) => {
+  server.tool(
+    tool.name,
+    tool.description,
+    tool.params,
+    tool.handler
+  )
+});
 
 
 async function main() {

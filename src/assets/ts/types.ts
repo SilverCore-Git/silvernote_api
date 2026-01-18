@@ -39,7 +39,7 @@ export interface Note {
 
 
 export interface Tag {
-    _id: string;
+    _id?: string;
     uuid: string;
     user_id?: string;
     id: number;
