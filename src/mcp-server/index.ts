@@ -1,7 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import notes from "../assets/ts/notes.js";
-import tags from "../assets/ts/tags.js";
 
 
 // Create server instance
@@ -29,53 +27,16 @@ tools.forEach((tool: Tool) => {
 
 
 
-// get note
-server.resource(
-  "note",
-  "note:///{uuid}",
-  async (uri: URL) => {
-    // Extract uuid from the URI path
-    const pathParts = uri.pathname.split('/').filter(Boolean);
-    const uuid = pathParts[0];
-
-    const note = await notes.getNoteByUUID(uuid);
-
-    return {
-      contents: [
-        {
-          uri: uri.href,
-          mimeType: "application/json",
-          text: JSON.stringify(note, null, 2),
-        },
-      ],
-    };
-  }
-);
-
-// get tag
-server.resource(
-  "tag",
-  "tag:///{uuid}",
-  async (uri: URL) => {
-    // Extract uuid from the URI path
-    const pathParts = uri.pathname.split('/').filter(Boolean);
-    const uuid = pathParts[0];
-
-    const tag = await tags.getTagByUUID(uuid);
-
-    return {
-      contents: [
-        {
-          uri: uri.href,
-          mimeType: "application/json",
-          text: JSON.stringify(tag, null, 2),
-        },
-      ],
-    };
-  }
-);
-
-
+// resources
+import resources from "./src/resources/index.js";
+import { Resource } from "./MCPTypes.js";
+resources.forEach((resource: Resource) => {
+  server.resource(
+    resource.name,
+    resource.url,
+    resource.handler
+  )
+});
 
 
 async function main() {
