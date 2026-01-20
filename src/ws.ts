@@ -38,52 +38,36 @@ const docs = new Map<string, {
   icon: string
 }>();
 
-
-
 io.on("connection", (socket) => {
 
   console.log("Client connected :", socket.id);
 
+  // Stocker la room du socket pour l'utiliser dans les autres événements
+  let currentRoom: string | null = null;
+
   socket.on("join-room", async ({ room, userId }: { room: string, userId?: string }) => {
 
+    console.log('join-room', room, userId);
+
     if (!room) return;
+    
+    currentRoom = room; // Stocker la room
     socket.join(room);
+    console.log('joining room', room, userId);
     
     let docData = docs.get(room);
 
     if (!docData) {
-
       const ydoc = new Y.Doc();
-      
-      // TipTap stocke le contenu ProseMirror dans un XmlFragment (pas utiliser de ytext)
       const fragment = ydoc.getXmlFragment("prosemirror");
-
       const awareness = new awarenessProtocol.Awareness(ydoc);
       const note = await get_note(room);
       
       const title = note?.title || "";
       const icon = note?.icon || "";
 
-      // Ne pas initialiser le contenu manuellement
-      // il sera géré par TipTap côté client
-      
-      // const saveNote = async () => {
-      //   const currentDoc = docs.get(room);
-      //   const currentNote = await get_note(room);
-      //   if (currentNote && currentDoc) {
-      //       await save_note({
-      //         ...currentNote,
-      //         title: currentDoc.title,
-      //         icon: currentDoc.icon
-      //       });
-      //   }
-      // }
-      // await saveNote();
-
       const saveInterval = setInterval(async () => {
-        // auto save gérer par le client !!!
         clearInterval(saveInterval);
-        //await saveNote();
       }, 10000);
 
       docs.set(room, { ydoc, awareness, saveInterval, title, icon });
@@ -93,7 +77,6 @@ io.on("connection", (socket) => {
     const { ydoc, awareness } = docData;
 
     const initialState = Y.encodeStateAsUpdate(ydoc);
-    
     const stateArray = Array.from(initialState);
     socket.emit("sync", stateArray);
     
@@ -103,145 +86,136 @@ io.on("connection", (socket) => {
     if (userId) {
       socket.emit('new_user', userId);
     }
-
-    socket.on("y-update", async (update: Uint8Array | number[]) => 
-    {
-
-      try {
-
-        const uint8Array = update instanceof Uint8Array 
-          ? update 
-          : new Uint8Array(update);
-
-        Y.applyUpdate(ydoc, uint8Array);
-        socket.to(room).emit("y-update", Array.from(uint8Array));
-
-      } catch (error) {
-        console.error("Error applying update:", error);
-      }
-
-    });
-
-
-    socket.on('title-update', async (update: string) => 
-    {
-
-      try {
-
-        const currentDoc = docs.get(room);
-
-        if (currentDoc) 
-        {
-          currentDoc.title = update;
-          socket.to(room).emit("title-update", update);
-        }
-
-      } catch (error) {
-        console.error("Error applying update:", error);
-      }
-
-    });
-
-    socket.on('icon-update', async (update: string) => 
-    {
-
-      try {
-
-        const currentDoc = docs.get(room);
-
-        if (currentDoc) 
-        {
-          currentDoc.icon = update;
-          socket.to(room).emit("icon-update", update);
-          const note: Note | undefined = await get_note(room);
-          if (note) {
-            await save_note({
-              ...note,
-              icon: update
-            });
-          }
-        }
-
-      } catch (error) {
-        console.error("Error applying update:", error);
-      }
-
-    })
-
-    socket.on("awareness-update", (update: Uint8Array | number[]) => 
-    {
-
-      try {
-
-        const uint8Array = update instanceof Uint8Array 
-          ? update 
-          : new Uint8Array(update);
-        awarenessProtocol.applyAwarenessUpdate(awareness, uint8Array, socket);
-        
-        socket.to(room).emit("awareness-update", Array.from(uint8Array));
-
-      } catch (error) {
-        console.error("Error applying awareness update:", error);
-      }
-
-    });
-
-    socket.on('ai-command', async (data: { command: string; content: any }) => 
-    {
-
-      console.log(`AI command received in room ${room}:`, data.command);
-      
-      try {
-
-        if (data.command === 'insertContent') {
-          io.to(room).emit('ai-command', data);
-        }
-
-      } catch (error) {
-        console.error("Error handling AI command:", error);
-      }
-
-    });
-
-    socket.on("disconnect", async () => {
-
-      const roomId = Array.from(socket.rooms)[1];
-      if (!roomId) return;
-
-      const docData = docs.get(roomId);
-      if (!docData) return;
-
-      const { ydoc, saveInterval } = docData;
-      
-      // info de claude pour passer autosave dans back //
-      
-      // Pour sauvegarder en HTML, vous devrez utiliser une librairie
-      // comme prosemirror-model pour convertir le XmlFragment en HTML
-      // Pour l'instant, on sauvegarde juste les métadonnées
-      // Le contenu sera sauvegardé via l'autosave périodique côté client
-
-      const note: Note | undefined = await get_note(roomId);
-      if (note) {
-        await save_note({
-          ...note,
-          // contenu maj avec autosave du client
-          title: docData.title,
-          icon: docData.icon
-        });
-      }
-      
-      awareness.setLocalState(null);
-      
-      if (room && io.sockets.adapter.rooms.get(room)?.size === 0) {
-        if (saveInterval) {
-          clearInterval(saveInterval);
-        }
-        docs.delete(room);
-      }
-      
-      console.log("Client disconnected:", socket.id);
-    });
   });
+
+  // DÉPLACÉ EN DEHORS : Ces listeners ne sont créés qu'UNE SEULE FOIS par connexion
+  socket.on("y-update", async (update: Uint8Array | number[]) => {
+    
+    if (!currentRoom) return;
+    const docData = docs.get(currentRoom);
+    if (!docData) return;
+
+    try {
+      const uint8Array = update instanceof Uint8Array 
+        ? update 
+        : new Uint8Array(update);
+
+      Y.applyUpdate(docData.ydoc, uint8Array);
+      socket.to(currentRoom).emit("y-update", Array.from(uint8Array));
+
+    } catch (error) {
+      console.error("Error applying update:", error);
+    }
+  });
+
+  socket.on('title-update', async (update: string) => {
+    
+    if (!currentRoom) return;
+    const docData = docs.get(currentRoom);
+
+    try {
+      if (docData) {
+        docData.title = update;
+        socket.to(currentRoom).emit("title-update", update);
+      }
+    } catch (error) {
+      console.error("Error applying update:", error);
+    }
+  });
+
+  socket.on('icon-update', async (update: string) => {
+    
+    if (!currentRoom) return;
+    const docData = docs.get(currentRoom);
+
+    try {
+      if (docData) {
+        docData.icon = update;
+        socket.to(currentRoom).emit("icon-update", update);
+        const note: Note | undefined = await get_note(currentRoom);
+        if (note) {
+          await save_note({
+            ...note,
+            icon: update
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error applying update:", error);
+    }
+  });
+
+  socket.on("awareness-update", (update: Uint8Array | number[]) => {
+    
+    if (!currentRoom) return;
+    const docData = docs.get(currentRoom);
+    if (!docData) return;
+
+    try {
+      const uint8Array = update instanceof Uint8Array 
+        ? update 
+        : new Uint8Array(update);
+      
+      awarenessProtocol.applyAwarenessUpdate(docData.awareness, uint8Array, socket);
+      socket.to(currentRoom).emit("awareness-update", Array.from(uint8Array));
+
+    } catch (error) {
+      console.error("Error applying awareness update:", error);
+    }
+  });
+
+  socket.on('ai-command', async (data: { command: string; content: any }) => {
+    
+    if (!currentRoom) return;
+    
+    console.log(`AI command received in room ${currentRoom}:`, data.command);
+    
+    try {
+      if (data.command === 'insertContent') {
+        io.to(currentRoom).emit('ai-command', data);
+      }
+    } catch (error) {
+      console.error("Error handling AI command:", error);
+    }
+  });
+
+  socket.on('leave-room', ({ room }: { room: string }) => {
+    socket.leave(room);
+    if (currentRoom === room) {
+      currentRoom = null;
+    }
+  });
+
+  socket.on("disconnect", async () => {
+
+    if (!currentRoom) return;
+
+    const docData = docs.get(currentRoom);
+    if (!docData) return;
+
+    const { awareness, saveInterval } = docData;
+    
+    const note: Note | undefined = await get_note(currentRoom);
+    if (note) {
+      await save_note({
+        ...note,
+        title: docData.title,
+        icon: docData.icon
+      });
+    }
+    
+    awareness.setLocalState(null);
+    
+    if (io.sockets.adapter.rooms.get(currentRoom)?.size === 0) {
+      if (saveInterval) {
+        clearInterval(saveInterval);
+      }
+      docs.delete(currentRoom);
+    }
+    
+    console.log("Client disconnected:", socket.id);
+  });
+
 });
 
 console.log("Socket.IO server running...");
