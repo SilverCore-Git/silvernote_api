@@ -12,7 +12,7 @@ const MCP_CONFIG = {
     args: [
         '-y',
         'tsx',
-        process.env.MCP_SERVER_PATH || './src/mcp-server/index.js'
+        process.env.MCP_SERVER_PATH || '../mcp-server/index.js'
     ]
 };
 
@@ -53,7 +53,7 @@ export class MCPService {
 
             this.client = new Client(
                 {
-                    name: 'openai-mcp-client',
+                    name: 'silvernote-mcp-client',
                     version: '1.0.0',
                 },
                 {

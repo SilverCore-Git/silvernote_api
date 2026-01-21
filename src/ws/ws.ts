@@ -4,10 +4,10 @@ import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import fs from 'fs';
 import path from 'path';
-import __dirname from "./assets/ts/_dirname.js";
+import __dirname from "../api/assets/ts/_dirname.js";
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'))
-import notes from "./assets/ts/notes.js";
-import { Note } from "./assets/ts/types.js";
+import notes from "../api/assets/ts/notes.js";
+import { Note } from "../api/assets/ts/types.js";
 
 const httpServer = createServer();
 
@@ -55,7 +55,6 @@ io.on("connection", (socket) => {
 
       const ydoc = new Y.Doc();
       
-      // TipTap stocke le contenu ProseMirror dans un XmlFragment (pas utiliser de ytext)
       const fragment = ydoc.getXmlFragment("prosemirror");
 
       const awareness = new awarenessProtocol.Awareness(ydoc);
@@ -63,22 +62,6 @@ io.on("connection", (socket) => {
       
       const title = note?.title || "";
       const icon = note?.icon || "";
-
-      // Ne pas initialiser le contenu manuellement
-      // il sera géré par TipTap côté client
-      
-      // const saveNote = async () => {
-      //   const currentDoc = docs.get(room);
-      //   const currentNote = await get_note(room);
-      //   if (currentNote && currentDoc) {
-      //       await save_note({
-      //         ...currentNote,
-      //         title: currentDoc.title,
-      //         icon: currentDoc.icon
-      //       });
-      //   }
-      // }
-      // await saveNote();
 
       const saveInterval = setInterval(async () => {
         // auto save gérer par le client !!!
@@ -212,13 +195,6 @@ io.on("connection", (socket) => {
       if (!docData) return;
 
       const { ydoc, saveInterval } = docData;
-      
-      // info de claude pour passer autosave dans back //
-      
-      // Pour sauvegarder en HTML, vous devrez utiliser une librairie
-      // comme prosemirror-model pour convertir le XmlFragment en HTML
-      // Pour l'instant, on sauvegarde juste les métadonnées
-      // Le contenu sera sauvegardé via l'autosave périodique côté client
 
       const note: Note | undefined = await get_note(roomId);
       if (note) {
