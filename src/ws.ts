@@ -47,13 +47,10 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", async ({ room, userId }: { room: string, userId?: string }) => {
 
-    console.log('join-room', room, userId);
-
     if (!room) return;
     
     currentRoom = room; // Stocker la room
     socket.join(room);
-    console.log('joining room', room, userId);
     
     let docData = docs.get(room);
 
@@ -88,7 +85,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // DÉPLACÉ EN DEHORS : Ces listeners ne sont créés qu'UNE SEULE FOIS par connexion
   socket.on("y-update", async (update: Uint8Array | number[]) => {
     
     if (!currentRoom) return;
