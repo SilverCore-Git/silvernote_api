@@ -17,7 +17,10 @@ const edit_note_title: Tool = {
 
         const { socket } = useWS(parms.uuid);
 
-        socket.emit('title-update', parms.title);
+        socket.emit('ai-title-update', {
+            title: parms.title,
+            room: parms.uuid
+        });
 
         return {
             content: [

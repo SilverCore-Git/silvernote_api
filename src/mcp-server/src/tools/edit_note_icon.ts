@@ -17,8 +17,10 @@ const edit_note_icon: Tool = {
 
         const { socket } = useWS(parms.uuid);
 
-        socket.emit('icon-update', parms.icon);
-
+        socket.emit('ai-icon-update', {
+            icon: parms.icon,
+            room: parms.uuid
+        });
 
         return {
             content: [

@@ -181,6 +181,42 @@ io.on("connection", (socket) => {
     }
   );
 
+  socket.on('ai-title-update',
+    async (data: {
+            title: string,
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-title-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
+
+    }
+  );
+
+  socket.on('ai-icon-update',
+    async (data: {
+            icon: string,
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-icon-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
+
+    }
+  );
+
   socket.on('leave-room', ({ room }: { room: string }) => {
     socket.leave(room);
     if (currentRoom === room) {
