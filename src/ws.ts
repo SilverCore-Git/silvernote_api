@@ -47,13 +47,10 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", async ({ room, userId }: { room: string, userId?: string }) => {
 
-    console.log('join-room', room, userId);
-
     if (!room) return;
     
     currentRoom = room; // Stocker la room
     socket.join(room);
-    console.log('joining room', room, userId);
     
     let docData = docs.get(room);
 
@@ -88,7 +85,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // DÉPLACÉ EN DEHORS : Ces listeners ne sont créés qu'UNE SEULE FOIS par connexion
   socket.on("y-update", async (update: Uint8Array | number[]) => {
     
     if (!currentRoom) return;
@@ -164,20 +160,63 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('ai-command', async (data: { command: string; content: any }) => {
-    
-    if (!currentRoom) return;
-    
-    console.log(`AI command received in room ${currentRoom}:`, data.command);
-    
-    try {
-      if (data.command === 'insertContent') {
-        io.to(currentRoom).emit('ai-command', data);
+  // MCP tools emits
+  socket.on('ai-content-update',
+    async (data: {
+            content: {
+                html: string,
+                pos: number
+            },
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-content-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
       }
-    } catch (error) {
-      console.error("Error handling AI command:", error);
+
     }
-  });
+  );
+
+  socket.on('ai-title-update',
+    async (data: {
+            title: string,
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-title-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
+
+    }
+  );
+
+  socket.on('ai-icon-update',
+    async (data: {
+            icon: string,
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-icon-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
+      }
+
+    }
+  );
 
   socket.on('leave-room', ({ room }: { room: string }) => {
     socket.leave(room);

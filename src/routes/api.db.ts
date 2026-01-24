@@ -79,11 +79,25 @@ router.post('/delete/a/note', async (req: Request, res: Response) => {
 });
 
 router.get('/get/user/notes', async (req: Request, res: Response) => {
-    const db_res = await note_db.getNoteByUserId(req.query.user_id as string);
+
+    const userId = req.query.user_id as string;
+    const db_res = await note_db.getNoteByUserId(userId);
+
     res.json({
         ...db_res,
-        notes: db_res.notes.filter(note => note.title !== '' && note.content !== '')
+        notes: db_res.notes.filter(note => note.title !== '' || note.content !== '')
     });
+
+    // identify gost notes
+    const ghostNotes: Note[] = db_res.notes.filter(note => 
+        note.title === '' && note.content === ''
+        || note.title === '' && note.content === '<p></p>'
+    );
+
+    if (ghostNotes.length > 0) {
+        await Promise.all(ghostNotes.map(note => note_db.deleteNoteByUUID(userId, note.uuid || '')));
+    }
+
 });
 
 router.post('/delete/notes', async (req: Request, res: Response) => {
