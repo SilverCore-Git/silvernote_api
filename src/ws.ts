@@ -160,20 +160,26 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('ai-command', async (data: { command: string; content: any }) => {
-    
-    if (!currentRoom) return;
-    
-    console.log(`AI command received in room ${currentRoom}:`, data.command);
-    
-    try {
-      if (data.command === 'insertContent') {
-        io.to(currentRoom).emit('ai-command', data);
+  socket.on('ai-content-update',
+    async (data: {
+            content: {
+                html: string,
+                pos: number
+            },
+            room: string
+        }
+    ) => {
+      
+      if (!data.room) return;
+
+      try {
+        io.to(data.room).emit('ai-content-update', data);
+      } catch (error) {
+        console.error("Error handling AI command:", error);
       }
-    } catch (error) {
-      console.error("Error handling AI command:", error);
+
     }
-  });
+  );
 
   socket.on('leave-room', ({ room }: { room: string }) => {
     socket.leave(room);
