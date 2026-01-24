@@ -160,6 +160,7 @@ io.on("connection", (socket) => {
     }
   });
 
+  // MCP tools emits
   socket.on('ai-content-update',
     async (data: {
             content: {
