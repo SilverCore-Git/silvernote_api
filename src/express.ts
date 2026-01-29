@@ -26,6 +26,7 @@ import api_share from './routes/api.share.js';
 import user from './routes/user.js';
 import money from './routes/money.js';
 import admin from './routes/admin.js';
+import resources from './routes/resources.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -85,6 +86,7 @@ app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
 app.use('/money',  money);
+app.use('/resources', resources);
 app.use('/api/db', requireAuth(),  api_db);
 
 

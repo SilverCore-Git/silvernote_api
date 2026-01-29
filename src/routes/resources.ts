@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { fetch } from '../assets/ts/db/db.silvernote.js';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
 
 const router = Router();
@@ -21,6 +22,18 @@ router.get('/db/length', async (req: Request, res: Response) => {
     });
 
 })
+
+
+router.get('/clerk/users/length', async (req: Request, res: Response) => {
+
+    const data = await clerkClient.users.getCount()
+
+    res.json({
+        users: data || null
+    });
+
+});
+
 
 
 
