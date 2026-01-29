@@ -36,7 +36,7 @@ router.get('/:uuid', async (req, res) => {
         const now = Date.now();
         const isExpired: boolean = now - createdTime > TheShare.params.age;
 
-        if (TheShare.params.age !== -1 &&isExpired) {
+        if (TheShare.params.age !== -1 && isExpired) {
             Share.delete(uuid);
             res.json({ expired: isExpired });
             return;
@@ -67,10 +67,19 @@ router.get('/:uuid/info', async (req, res) => {
 
     const _share = await Share.get(uuid);
 
-    res.json({ 
+    if (!_share) {
+        res.json({ success: false, error: true, message: 'Partage non trouvée.' });
+        return;
+    }
+
+    res.json({
+        success: true,
         share: {
             ..._share,
-            params: {}
+            params: {
+                ..._share.params,
+                passwd: _share.params.passwd ? true : false
+            }
         }
     });
     return;
@@ -84,6 +93,12 @@ router.post('/create', async (req, res) => {
 
     try {
 
+        if (!user_id || !note_uuid || !params)
+        {
+            res.json({ error: true, message: 'Missing parameters.' });
+            return;
+        }
+
         if (await Share.get(note_uuid)) {
             await Share.delete(note_uuid);
         }
@@ -93,7 +108,7 @@ router.post('/create', async (req, res) => {
             owner_id: user_id,
         }
 
-        const TheShare = await Share.add({
+        await Share.add({
 
             uuid: note_uuid,
             owner_id: user_id,
@@ -101,7 +116,7 @@ router.post('/create', async (req, res) => {
 
             params,
 
-            created_at: new Date().toString(),
+            created_at: new Date().toISOString(),
             expires_at: "",
 
             visitor: [],
@@ -121,9 +136,10 @@ router.post('/create', async (req, res) => {
 
 })
 
-router.post('/ban', async (req, res) => {
+router.post('/:uuid/ban', async (req, res) => {
 
-    const { uuid, banned_id } = req.body;
+    const { banned_id } = req.body;
+    const uuid = req.params.uuid;
 
     try {
 
@@ -147,6 +163,58 @@ router.post('/ban', async (req, res) => {
 
     catch (err) {
         res.json({ error: true, message: err });
+        return;
+    }
+
+})
+
+
+router.post('/:uuid/update', async (req, res) => {
+
+    const { share } = req.body;
+    const uuid = req.params.uuid;
+
+
+    try {
+
+        const TheShare = await Share.get(uuid);
+
+        if (TheShare) {
+
+            const updatedShare = { ...TheShare, ...share, params: { passwd: TheShare.params.passwd, ...share.params } };
+
+            await Share.update(updatedShare!);
+
+            res.json({ success: true, share: updatedShare });
+            return;
+
+        }
+
+        res.json({ success: false });
+        return;
+
+    }
+
+    catch (err) {
+        res.status(500).json({ error: true, message: err });
+        return;
+    }
+
+})
+
+router.post('/:uuid/delete', async (req, res) => {
+
+    const uuid = req.params.uuid;
+
+    try {
+
+        await Share.delete(uuid);
+
+        res.json({ success: true });
+
+    }
+    catch (err) {
+        res.status(500).json({ error: true, message: err });
         return;
     }
 
@@ -219,6 +287,7 @@ router.get('/by/me', async (req, res) => {
         for (const share of my_share)
         {
             const __note = await notes.getNoteByUUID(share.note_uuid);
+            console.log(share)
             if (!__note.note) continue;
             _notes.push(__note.note);
         }
