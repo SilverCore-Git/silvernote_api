@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { clerkClient, requireAuth } from "@clerk/express";
-import { randomUUID } from 'crypto';
+import { randomUUID, UUID } from 'crypto';
 import News from '../assets/ts/news.js';
 import notifications from '../assets/ts/db/notifications.js';
 
@@ -36,21 +36,5 @@ router.get('/news', (req: Request, res: Response) => {
     res.json(news);
 
 });
-
-router.get('/notifications', requireAuth(), async (req: Request, res: Response) => {
-
-    const client_userId = req.cookies.user_id;
-
-    if (!client_userId) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-    }
-
-    const notif = await notifications.getByUserId(client_userId);
-
-    res.json({ notifications: notif });
-
-});
-
 
 export default router;
