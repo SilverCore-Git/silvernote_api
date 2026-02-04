@@ -90,7 +90,7 @@ app.use('/resources', resources);
 app.use('/api/ai', requireAuth(), api_ai);
 app.use('/api/share', requireAuth(), api_share);
 app.use('/api/db', requireAuth(),  api_db);
-app.use('/notifications', requireAuth(), notifications);
+app.use('/api/notifications', requireAuth(), notifications);
 
 
 app.get('/version', (req, res) => {
