@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "title": "Nouvelle mise à jour disponible !",
+    "content": "## Version 1.5 est là !\n\nNous avons ajouté plusieurs améliorations :\n- Mode sombre pour vos notes 🌙\n- Recherche plus rapide 🔍\n- Correction de bugs mineurs 🐞\n\nMettez à jour pour profiter de ces nouveautés !",
+    "date": "2026-02-04T09:00:00Z"
+  },
+  {
+    "id": 2,
+    "title": "Astuce du jour : organiser vos notes",
+    "content": "### Classez vos notes par tags\n\nUtilisez des **tags** pour mieux organiser vos notes et retrouver vos idées en un clin d'œil.\n\nExemple :\n- `#travail`\n- `#personnel`\n- `#projets`",
+    "date": "2026-02-03T14:30:00Z"
+  },
+  {
+    "id": 3,
+    "title": "Mini-jeux intégrés à Silvernote !",
+    "content": "Pour rendre vos pauses plus fun, nous avons ajouté **des mini-jeux** :\n- 🐍 Snake\n- 🔢 2048\n- 🧩 Puzzle rapide\n\nAccédez à eux depuis le menu **Divertissement** !",
+    "date": "2026-02-02T10:15:00Z"
+  },
+  {
+    "id": 4,
+    "title": "Synchronisation cloud améliorée",
+    "content": "La synchronisation de vos notes avec le cloud est **plus rapide et fiable**.\n\n- Synchronisation automatique en arrière-plan ☁️\n- Moins de conflits entre appareils\n- Historique de versions amélioré 📜",
+    "date": "2026-02-01T08:45:00Z"
+  },
+  {
+    "id": 5,
+    "title": "Partage de notes simplifié",
+    "content": "Vous pouvez maintenant **partager vos notes** avec vos amis ou collègues en un clic :\n\n- Générez un lien public 🌐\n- Définissez les permissions (lecture seule ou modification)\n- Partage rapide via email ou messagerie 📧",
+    "date": "2026-01-31T16:00:00Z"
+  }
+]
