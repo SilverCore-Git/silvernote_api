@@ -7,14 +7,6 @@ export interface User {
     plan: Plan[];
 };
 
-export interface News { 
-    active: boolean;
-    message: string; 
-    title: string;
-    btn: boolean;
-    href: string;
-};
-
 export interface Layout {
     all: number;
     file: number;

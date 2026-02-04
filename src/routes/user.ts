@@ -9,7 +9,6 @@ import { User } from '../assets/ts/types.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-
 // route de gestion de plan
 router.post('/plan/set', async (req: Request, res: Response) => {
 
