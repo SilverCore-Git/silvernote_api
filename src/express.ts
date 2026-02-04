@@ -27,6 +27,7 @@ import user from './routes/user.js';
 import money from './routes/money.js';
 import admin from './routes/admin.js';
 import resources from './routes/resources.js';
+import notifications from './routes/api.notifications.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -81,13 +82,15 @@ app.use(clerkMiddleware());
 
 // Routes
 app.use('/api', api);
-app.use('/api/share', requireAuth(), api_share);
-app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
 app.use('/money',  money);
 app.use('/resources', resources);
+// secured routes
+app.use('/api/ai', requireAuth(), api_ai);
+app.use('/api/share', requireAuth(), api_share);
 app.use('/api/db', requireAuth(),  api_db);
+app.use('/notifications', requireAuth(), notifications);
 
 
 app.get('/version', (req, res) => {
