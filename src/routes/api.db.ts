@@ -11,6 +11,7 @@ import axios from 'axios';
 import FormData from "form-data";
 import downloadFile from "../assets/ts/downloadFile.js";
 import { fileURLToPath } from "url";
+import { getUserFingerprint } from "../assets/ts/utils/scrypto/scrypto.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -52,6 +53,21 @@ router.post('/verify/data', async (req: Request, res: Response) => {
         console.error(err);
         res.status(500).json({ error: true, message: 'Internal server error.' });
     }
+
+});
+
+
+router.get('/get/scrypto/fingerprint', async (req: Request, res: Response) => {
+
+    const userId = req.cookies.user_id;
+    if (!userId) {
+        res.status(400).json({ error: true, message: 'user_id cookie is required.' });
+        return;
+    }
+
+    const fingerprint = getUserFingerprint(userId);
+
+    res.json({ fingerprint });
 
 });
 

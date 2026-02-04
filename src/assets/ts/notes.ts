@@ -2,6 +2,7 @@ import nodeFetch from 'node-fetch';
 import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
 import 'dotenv/config';
+import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
     class Notes {
 
@@ -60,11 +61,18 @@ import 'dotenv/config';
 
             if (!note.user_id) return { error: true, message: "user_id requis" };
             note.uuid = note.uuid || randomUUID();
-            note.created_at = note.created_at || Date.now();
+            note.created_at = Date.now();
+
+            const noteToStore = { ...note };
+            if (noteToStore.content)
+            {
+                noteToStore.content = encrypt(noteToStore.content, note.user_id);
+                noteToStore.content_type = "text/html/crypted";
+            }
             
             const res = await this.fetch('/push', {
                 method: 'POST',
-                body: JSON.stringify({ note })
+                body: JSON.stringify({ note: noteToStore })
             })
 
             return { success: res?._id ? true : false, note };
@@ -80,17 +88,67 @@ import 'dotenv/config';
 
             if (note && note.uuid) 
             {
-                return { success: true, note };
+
+                if (note.content_type === "text/html/crypted" && note.content)
+                {
+
+                    if (note.content && note.content.includes(':'))
+                    {
+
+                        try {
+                            note.content = decrypt(note.content, note.user_id);
+                            return { success: true, note };
+                        }
+                        catch (e) {
+                            console.error("Error on decrypting note : ", note.uuid);
+                            return { success: false, error: true, message: "Error on decrypting note" };
+                        }
+
+                    }
+
+                }
+                else
+                {
+                    return { success: true, note };
+                }
+
             }
-            else return { error: true, message: "Note introuvable" };
+            else
+            {
+                return { error: true, message: "Note introuvable" };
+            }
+
+            return { error: true, message: "Note introuvable" };
 
         }
 
         public async getNoteByUserId(user_id: string) {
 
             const notes: Note[] = await this.fetch(`/get/byuserid/${user_id}`);
+            const decryptedNotes: Note[] = [];
 
-            return { success: true, notes };
+            for (const note of notes)
+            {
+
+                if (note.content_type === "text/html/crypted" && note.content)
+                {
+
+                    try {
+                        note.content = decrypt(note.content, note.user_id);
+                        decryptedNotes.push(note);
+                    } catch (e) {
+                        console.error("Error on decrypting note : ", note.uuid);
+                    }
+
+                }
+                else
+                {
+                    decryptedNotes.push(note);
+                }
+
+            }
+
+            return { success: true, notes: decryptedNotes };
 
         }
 
@@ -99,10 +157,17 @@ import 'dotenv/config';
             if (!note.uuid || !note.user_id) {
                 return { error: true, message: "uuid et user_id requis" };
             }
+
+            const noteToStore = { ...note };
+            if (noteToStore.content)
+            {
+                noteToStore.content = encrypt(noteToStore.content, note.user_id);
+                noteToStore.content_type = "text/html/crypted";
+            }
             
             const res = await this.fetch('/update', {
                 method: "POST",
-                body: JSON.stringify({ note })
+                body: JSON.stringify({ note: noteToStore })
             });
 
             if (res.error) {
@@ -110,7 +175,7 @@ import 'dotenv/config';
             }
 
             if (res.uuid) {
-                return { success: true, note };
+                return { success: true, note: note };
             }
             
             return { error: true, message: "réponse inattendue", res };
