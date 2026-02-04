@@ -66,7 +66,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
             const noteToStore = { ...note };
             if (noteToStore.content)
             {
-                noteToStore.content = encrypt(noteToStore.content);
+                noteToStore.content = encrypt(noteToStore.content, note.user_id);
                 noteToStore.content_type = "text/html/crypted";
             }
             
@@ -96,7 +96,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
                     {
 
                         try {
-                            note.content = decrypt(note.content);
+                            note.content = decrypt(note.content, note.user_id);
                             return { success: true, note };
                         }
                         catch (e) {
@@ -134,7 +134,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
                 {
 
                     try {
-                        note.content = decrypt(note.content);
+                        note.content = decrypt(note.content, note.user_id);
                         decryptedNotes.push(note);
                     } catch (e) {
                         console.error("Error on decrypting note : ", note.uuid);
@@ -161,7 +161,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
             const noteToStore = { ...note };
             if (noteToStore.content)
             {
-                noteToStore.content = encrypt(noteToStore.content);
+                noteToStore.content = encrypt(noteToStore.content, note.user_id);
                 noteToStore.content_type = "text/html/crypted";
             }
             
