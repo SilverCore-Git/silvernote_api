@@ -1,18 +1,27 @@
 import { randomUUID, type UUID } from 'crypto';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+
+interface Btn { 
+    text: string; 
+    action: string, // () => void 
+    type: 'default-primary' | 'primary' | 'primary danger'
+};
 
 interface NotificationItem {
     id: UUID;
     title: string;
     content: string; // md format
     date: Date;
-    read: boolean;
+    readBy: string[];
     forUserId: string[];
+    btns?: Btn[];
 }
 
 export class NotificationManager
@@ -21,7 +30,8 @@ export class NotificationManager
     private dbPath: string;
 
     constructor() {
-        this.dbPath = path.join(__dirname, '../../../../', 'db', 'notifications.json');
+        this.dbPath = path.join(__dirname, '../../../', 'db', 'notifications.json');
+        if (!fs.existsSync(this.dbPath)) fs.writeFileSync(this.dbPath, JSON.stringify([]), 'utf-8');
     }
 
     /**
@@ -33,8 +43,9 @@ export class NotificationManager
         try {
 
             const data = await readFile(this.dbPath, 'utf-8');
+            const parseData: NotificationItem[] = JSON.parse(data);
             
-            return JSON.parse(data).map((n: any) => ({
+            return parseData.map((n: any) => ({
                 ...n,
                 date: new Date(n.date)
             }));
@@ -74,7 +85,7 @@ export class NotificationManager
         
         return all.filter(n => 
             n.forUserId.includes(userId) && 
-            !n.read && 
+            !n.readBy.includes(userId) && 
             new Date(n.date).toLocaleDateString() === today
         ).length;
 
@@ -83,7 +94,7 @@ export class NotificationManager
     /**
      * Add a new notification
      */
-    public async add(notif: Omit<NotificationItem, 'id' | 'date' | 'read'>): Promise<NotificationItem>
+    public async add(notif: Omit<NotificationItem, 'id' | 'date' | 'readBy'>): Promise<NotificationItem>
     {
 
         const all = await this.getAll();
@@ -91,7 +102,7 @@ export class NotificationManager
             ...notif,
             id: randomUUID(),
             date: new Date(),
-            read: false
+            readBy: []
         };
 
         all.push(newNotif);
@@ -103,14 +114,15 @@ export class NotificationManager
     /**
      * Mark a notification as read
      */
-    public async markAsRead(id: UUID): Promise<void>
+    public async markAsRead(id: string, user_id: string): Promise<void>
     {
 
         const all = await this.getAll();
         const index = all.findIndex(n => n.id === id);
 
         if (index !== -1) {
-            all[index].read = true;
+            if (all[index].readBy.includes(user_id)) return;
+            all[index].readBy.push(user_id);
             await this.save(all);
         }
 
