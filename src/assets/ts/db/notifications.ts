@@ -57,7 +57,7 @@ export class NotificationManager
     /**
      * Get notifications for a specific user
      */
-    async getForUser(userId: string): Promise<NotificationItem[]>
+    public async getForUser(userId: string): Promise<NotificationItem[]>
     {
         const all = await this.getAll();
         return all.filter(n => n.forUserId.includes(userId));
@@ -66,7 +66,7 @@ export class NotificationManager
     /**
      * Count unread notifications for today for a specific user
      */
-    async countTodayUnread(userId: string): Promise<number>
+    public async countTodayUnread(userId: string): Promise<number>
     {
 
         const all = await this.getAll();
@@ -83,7 +83,7 @@ export class NotificationManager
     /**
      * Add a new notification
      */
-    async add(notif: Omit<NotificationItem, 'id' | 'date' | 'read'>): Promise<NotificationItem>
+    public async add(notif: Omit<NotificationItem, 'id' | 'date' | 'read'>): Promise<NotificationItem>
     {
 
         const all = await this.getAll();
@@ -103,9 +103,9 @@ export class NotificationManager
     /**
      * Mark a notification as read
      */
-    async markAsRead(id: UUID): Promise<void>
+    public async markAsRead(id: UUID): Promise<void>
     {
-        
+
         const all = await this.getAll();
         const index = all.findIndex(n => n.id === id);
 
@@ -116,4 +116,16 @@ export class NotificationManager
 
     }
 
+    public async getByUserId(userId: string): Promise<NotificationItem[]>
+    {
+        const all = await this.getAll();
+        return all.filter(n => n.forUserId.includes(userId));
+    }
+
+}
+
+export default new NotificationManager();
+
+export {
+    type NotificationItem
 }

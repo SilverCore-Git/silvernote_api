@@ -1,19 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { clerkClient } from "@clerk/express";
+import { clerkClient, requireAuth } from "@clerk/express";
 import { randomUUID } from 'crypto';
 import News from '../assets/ts/news.js';
+import notifications from '../assets/ts/db/notifications.js';
 
 
 const router = Router();
 
-
-router.get('/news', (req: Request, res: Response) => {
-
-    const news = News.getAllNews();
-
-    res.json(news);
-
-})
 
 router.get('/uuid', (req, res) => {
     res.json({ id: randomUUID() })
@@ -36,17 +29,26 @@ router.get('/user/by/id/:userid', async (req, res) => {
 })
 
 
-router.get('/notifications', async (req, res) => {
+router.get('/news', (req: Request, res: Response) => {
+
+    const news = News.getAllNews();
+
+    res.json(news);
+
+});
+
+router.get('/notifications', requireAuth(), async (req: Request, res: Response) => {
 
     const client_userId = req.cookies.user_id;
 
     if (!client_userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
     }
 
-    const notifications = await clerkClient.users.getUserNotifications(client_userId);
+    const notif = await notifications.getByUserId(client_userId);
 
-    res.json({ notifications });
+    res.json({ notifications: notif });
 
 });
 
