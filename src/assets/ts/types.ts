@@ -31,6 +31,7 @@ export interface Note {
     icon?: string;
     title: string;
     content: string;
+    content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted";
     tags?: string[];
     pinned?: boolean;
     created_at?: number;
