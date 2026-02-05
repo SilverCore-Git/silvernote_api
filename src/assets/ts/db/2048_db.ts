@@ -106,7 +106,7 @@ export class GameManager
         const update: UserItem = {
             id: rawUpdate.id,
             best_score: rawUpdate.best_score > existingUser.best_score ? rawUpdate.best_score : existingUser.best_score,
-            total_score: existingUser.total_score + rawUpdate.best_score,
+            total_score: existingUser.total_score + rawUpdate.best_score, // best score = score
             max_tile: rawUpdate.max_tile > existingUser.max_tile ? rawUpdate.max_tile : existingUser.max_tile,
             lastPlayed: rawUpdate.lastPlayed || new Date(),
             partiesCount: existingUser.partiesCount + 1

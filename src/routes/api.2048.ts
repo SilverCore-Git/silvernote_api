@@ -76,6 +76,18 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 router.get('/player/:id', async (req: Request, res: Response) => {
 
     const playerId = req.params.id;
+    const userId = req.cookies.userId;
+
+    if (playerId !== userId)
+    {
+        res.status(403).json({
+            error: true,
+            message: "Accès refusé : vous ne pouvez accéder qu'à vos propres données",
+            playerId,
+            userId
+        });
+        return;
+    }
 
     try { 
 
