@@ -75,7 +75,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 
 router.get('/player/:id', async (req: Request, res: Response) => {
 
-    const playerId = req.cookies.userId;
+    const playerId = req.params.id;
 
     try { 
 
