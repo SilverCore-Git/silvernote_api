@@ -28,6 +28,7 @@ import money from './routes/money.js';
 import admin from './routes/admin.js';
 import resources from './routes/resources.js';
 import notifications from './routes/api.notifications.js';
+import api_2048 from './routes/api.2048.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -91,6 +92,7 @@ app.use('/api/ai', requireAuth(), api_ai);
 app.use('/api/share', requireAuth(), api_share);
 app.use('/api/db', requireAuth(),  api_db);
 app.use('/api/notifications', requireAuth(), notifications);
+app.use('/api/2048', requireAuth(), api_2048);
 
 
 app.get('/version', (req, res) => {

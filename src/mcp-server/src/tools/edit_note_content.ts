@@ -1,11 +1,6 @@
 import { Tool } from "../../MCPTypes.js";
 import useWS from "../utils/useWS.js";
 import { z } from "zod";
-import * as Y from "yjs";
-import { JSDOM } from "jsdom";
-import schema from "../../../assets/ts/utils/getTiptapSchema/getTiptapSchema.js";
-import { DOMParser } from "prosemirror-model";
-import { prosemirrorToYXmlFragment } from "y-prosemirror";
 
 
 const edit_note_content: Tool = {
