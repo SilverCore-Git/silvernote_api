@@ -4,6 +4,7 @@ import { Plan } from "./plan.js";
 export interface User { 
     userId: string;
     customerId?: string;
+    androidToken?: string;
     plan: Plan[];
 };
 
