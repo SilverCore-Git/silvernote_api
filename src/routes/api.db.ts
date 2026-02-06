@@ -97,11 +97,12 @@ router.post('/delete/a/note', async (req: Request, res: Response) => {
 
 router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) => {
 
+    const noPinned = String(req.query?.noPinned || '0') as '1' | '0';
     const userId = String(getAuth(req).userId);
     const start = Number(req.params.start);
     const end = Number(req.params.end);
 
-    const db_res = await note_db.getNoteByUserIdIndex(userId, start, end);
+    const db_res = await note_db.getNoteByUserIdIndex(userId, start, end, noPinned);
 
     res.json({
         ...db_res,

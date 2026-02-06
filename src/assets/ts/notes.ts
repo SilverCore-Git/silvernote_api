@@ -184,9 +184,9 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
         }
 
-        public async getNoteByUserIdIndex(user_id: string, start: number, end: number) {
+        public async getNoteByUserIdIndex(user_id: string, start: number, end: number, noPinned?: '1' | '0') {
 
-            const res = await this.fetch(`/user/${user_id}/index/start/${start}/end/${end}`);
+            const res = await this.fetch(`/user/${user_id}/index/start/${start}/end/${end}?noPinned=${noPinned}`);
             const decryptedNotes: Note[] = [];
 
             for (const note of res.notes)
