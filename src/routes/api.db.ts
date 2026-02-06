@@ -105,11 +105,11 @@ router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) =
 
     res.json({
         ...db_res,
-        notes: db_res.notes.filter(note => note.title !== '' || note.content !== '')
+        notes: db_res.notes
     });
 
     // identify gost notes
-    const ghostNotes: Note[] = db_res.notes.filter(note => 
+    const ghostNotes: Note[] = db_res.notes.filter((note: Note) => 
         note.title === '' && note.content === ''
         || note.title === '' && note.content === '<p></p>'
     );
@@ -119,6 +119,19 @@ router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) =
     }
 
 });
+
+router.get('/notes/pinned', async (req, res) => {
+
+    const userId = String(getAuth(req).userId);
+
+    const db_res = await note_db.getPinnedNotesByUserID(userId);
+
+    res.json({
+        ...db_res,
+        notes: db_res.notes
+    });
+
+})
 
 router.post('/delete/notes', async (req: Request, res: Response) => {
     const user_id = getAuth(req).userId;

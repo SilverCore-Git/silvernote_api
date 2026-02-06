@@ -124,6 +124,36 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
         }
 
+        public async getPinnedNotesByUserID (user_id: string)
+        {
+
+            const notes: Note[] = await this.fetch(`/user/${user_id}/pinned`).then(res => res.notes);
+            const decryptedNotes: Note[] = [];
+
+            for (const note of notes)
+            {
+
+                if (note.content_type === "text/html/crypted" && note.content)
+                {
+
+                    try {
+                        note.content = decrypt(note.content, note.user_id);
+                        decryptedNotes.push(note);
+                    } catch (e) {
+                        console.error("Error on decrypting note : ", note.uuid);
+                    }
+
+                }
+                else
+                {
+                    decryptedNotes.push(note);
+                }
+
+            }
+
+            return { success: true, notes: decryptedNotes };
+        }
+
         public async getNoteByUserId(user_id: string) {
 
             const notes: Note[] = await this.fetch(`/user/${user_id}`).then(res => res.notes);
@@ -180,7 +210,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
             }
 
-            return { success: true, notes: decryptedNotes };
+            return { ...res, success: true, notes: decryptedNotes };
 
         }
 
