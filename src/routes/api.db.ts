@@ -81,7 +81,7 @@ router.post('/new/note', async (req: Request, res: Response) => {
 });
 
 router.get('/get/a/note', async (req: Request, res: Response) => {
-    res.json(await note_db.getNoteByUUID(req.query.uuid as string));
+    res.json(await note_db.getNoteByUUID(req.query.uuid as string, req.cookies.user_id));
 });
 
 router.post('/update/a/note', async (req: Request, res: Response) => {
@@ -94,10 +94,13 @@ router.post('/delete/a/note', async (req: Request, res: Response) => {
     res.json(await note_db.deleteNoteByUUID(req.cookies.user_id, req.query.uuid as string));
 });
 
-router.get('/get/user/notes', async (req: Request, res: Response) => {
+router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) => {
 
-    const userId = req.query.user_id as string;
-    const db_res = await note_db.getNoteByUserId(userId);
+    const userId = String(req.cookies.userId);
+    const start = Number(req.params.start);
+    const end = Number(req.params.end);
+
+    const db_res = await note_db.getNoteByUserIdIndex(userId, start, end);
 
     res.json({
         ...db_res,
