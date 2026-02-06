@@ -1,6 +1,7 @@
 import nodeFetch from 'node-fetch';
 import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
+import { dbAgent } from './db/userDB.js';
 import 'dotenv/config';
 import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
@@ -35,6 +36,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
                 const res = await nodeFetch('https://db.silvernote.fr/notes' + path, { 
                     method: opt.method || 'GET',
                     body: opt.body,
+                    agent: dbAgent,
                     headers: {
                         "Authorization": process.env.DB_API_SK_1 || "",
                         "X-API-Key": process.env.DB_API_SK_2 || "",
@@ -80,9 +82,9 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
         }
 
 
-        public async getNoteByUUID(uuid: string) {
+        public async getNoteByUUID(uuid: string, userId: string) {
 
-            const res: Note[] = await this.fetch(`/get/${uuid}`);
+            const res: Note[] = await this.fetch(`/user/${userId}/id/${uuid}`).then(res => res.notes);
 
             const note: Note = res[0];
 
@@ -124,10 +126,40 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
         public async getNoteByUserId(user_id: string) {
 
-            const notes: Note[] = await this.fetch(`/get/byuserid/${user_id}`);
+            const notes: Note[] = await this.fetch(`/user/${user_id}`).then(res => res.notes);
             const decryptedNotes: Note[] = [];
 
             for (const note of notes)
+            {
+
+                if (note.content_type === "text/html/crypted" && note.content)
+                {
+
+                    try {
+                        note.content = decrypt(note.content, note.user_id);
+                        decryptedNotes.push(note);
+                    } catch (e) {
+                        console.error("Error on decrypting note : ", note.uuid);
+                    }
+
+                }
+                else
+                {
+                    decryptedNotes.push(note);
+                }
+
+            }
+
+            return { success: true, notes: decryptedNotes };
+
+        }
+
+        public async getNoteByUserIdIndex(user_id: string, start: number, end: number) {
+
+            const res = await this.fetch(`/user/${user_id}/index/start/${start}/end/${end}`);
+            const decryptedNotes: Note[] = [];
+
+            for (const note of res.notes)
             {
 
                 if (note.content_type === "text/html/crypted" && note.content)
@@ -182,7 +214,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
         }
 
         public async clearUserNotes(user_id: string) {
-            await this.fetch('/delete/byuserid/' + user_id, {
+            await this.fetch('/delete/user/' + user_id, {
                 method: 'DELETE'
             })
             return { success: true };
@@ -190,7 +222,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
         public async deleteNoteByUUID(user_id: string, uuid: string) {
             
-            const res = await this.fetch('/delete/' + uuid, {
+            const res = await this.fetch(`/delete/user/${user_id}/id/${uuid}`, {
                 method: "DELETE"
             })
 
