@@ -124,6 +124,48 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
         }
 
+        public async getNoteByUUIDNoUserID(uuid: string) {
+
+            const res: Note[] = await this.fetch(`/user/justID/id/${uuid}`).then(res => res.notes);
+
+            const note: Note = res[0];
+
+            if (note && note.uuid) 
+            {
+
+                if (note.content_type === "text/html/crypted" && note.content)
+                {
+
+                    if (note.content && note.content.includes(':'))
+                    {
+
+                        try {
+                            note.content = decrypt(note.content, note.user_id);
+                            return { success: true, note };
+                        }
+                        catch (e) {
+                            console.error("Error on decrypting note : ", note.uuid);
+                            return { success: false, error: true, message: "Error on decrypting note" };
+                        }
+
+                    }
+
+                }
+                else
+                {
+                    return { success: true, note };
+                }
+
+            }
+            else
+            {
+                return { error: true, message: "Note introuvable" };
+            }
+
+            return { error: true, message: "Note introuvable" };
+
+        }
+
         public async getPinnedNotesByUserID (user_id: string)
         {
 

@@ -8,6 +8,8 @@ import __dirname from "./assets/ts/_dirname.js";
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'))
 import notes from "./assets/ts/notes.js";
 import { Note } from "./assets/ts/types.js";
+import type { Share as ShareType } from "./assets/ts/db/share/ShareTypes.js";
+import Share from "./assets/ts/db/share/Share.js";
 
 const httpServer = createServer();
 
@@ -18,8 +20,9 @@ const save_note = async (note: Note): Promise<void> => {
   });
 }
 
+
 const get_note = async (uuid: string): Promise<Note | undefined> => {
-  const res = await notes.getNoteByUUID(uuid);
+  const res = await notes.getNoteByUUIDNoUserID(uuid);
   if (res.note) return res.note;
 }
 
@@ -45,7 +48,7 @@ io.on("connection", (socket) => {
   // Stocker la room du socket pour l'utiliser dans les autres événements
   let currentRoom: string | null = null;
 
-  socket.on("join-room", async ({ room, userId }: { room: string, userId?: string }) => {
+  socket.on("join-room", async ({ room, userId }: { room: string, userId: string }) => {
 
     if (!room) return;
     
@@ -53,10 +56,12 @@ io.on("connection", (socket) => {
     socket.join(room);
     
     let docData = docs.get(room);
+    const share = await Share.get(room);
 
-    if (!docData) {
+    if (!docData)
+    {
+
       const ydoc = new Y.Doc();
-      const fragment = ydoc.getXmlFragment("prosemirror");
       const awareness = new awarenessProtocol.Awareness(ydoc);
       const note = await get_note(room);
       
@@ -69,6 +74,7 @@ io.on("connection", (socket) => {
 
       docs.set(room, { ydoc, awareness, saveInterval, title, icon });
       docData = { ydoc, awareness, saveInterval, title, icon };
+
     }
 
     const { ydoc, awareness } = docData;
@@ -80,9 +86,12 @@ io.on("connection", (socket) => {
     socket.emit("title-update", docData.title);
     socket.emit("icon-update", docData.icon);
     
-    if (userId) {
+    if (userId)
+    {
+      if (share && userId == share.owner_id) return;
       socket.emit('new_user', userId);
     }
+
   });
 
   socket.on("y-update", async (update: Uint8Array | number[]) => {
