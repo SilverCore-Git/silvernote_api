@@ -12,6 +12,7 @@ import FormData from "form-data";
 import downloadFile from "../assets/ts/downloadFile.js";
 import { fileURLToPath } from "url";
 import { getUserFingerprint } from "../assets/ts/utils/scrypto/scrypto.js";
+import { getAuth } from "@clerk/express";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -24,7 +25,7 @@ router.post('/verify/data', async (req: Request, res: Response) => {
     try {
 
         const { notes, tags } = req.body as { notes: string; tags: string }; // hash of notes and tags
-        const user_id: string | undefined = req.cookies?.user_id;
+        const user_id = getAuth(req).userId;
 
         if (!notes || !tags || !user_id) {
             res.json({ error: true, message: 'Missing parameters.' });
@@ -59,13 +60,9 @@ router.post('/verify/data', async (req: Request, res: Response) => {
 
 router.get('/get/scrypto/fingerprint', async (req: Request, res: Response) => {
 
-    const userId = req.cookies.user_id;
-    if (!userId) {
-        res.status(400).json({ error: true, message: 'user_id cookie is required.' });
-        return;
-    }
+    const userId = getAuth(req).userId;
 
-    const fingerprint = getUserFingerprint(userId);
+    const fingerprint = getUserFingerprint(userId!);
 
     res.json({ fingerprint });
 
@@ -75,28 +72,32 @@ router.get('/get/scrypto/fingerprint', async (req: Request, res: Response) => {
 
 // for notes
 router.post('/new/note', async (req: Request, res: Response) => {
+    const { userId } = getAuth(req);
     const note = req.body.note;
-    note.user_id = req.cookies.user_id;
+    note.user_id = userId;
     res.json(await note_db.createNote(note));
 });
 
 router.get('/get/a/note', async (req: Request, res: Response) => {
-    res.json(await note_db.getNoteByUUID(req.query.uuid as string, req.cookies.user_id));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.getNoteByUUID(req.query.uuid as string, user_id!));
 });
 
 router.post('/update/a/note', async (req: Request, res: Response) => {
     const note = req.body.note;
-    note.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    note.user_id = user_id;
     res.json(await note_db.updateNote(note));
 });
 
 router.post('/delete/a/note', async (req: Request, res: Response) => {
-    res.json(await note_db.deleteNoteByUUID(req.cookies.user_id, req.query.uuid as string));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.deleteNoteByUUID(user_id!, req.query.uuid as string));
 });
 
 router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) => {
 
-    const userId = String(req.cookies.userId);
+    const userId = String(getAuth(req).userId);
     const start = Number(req.params.start);
     const end = Number(req.params.end);
 
@@ -120,7 +121,8 @@ router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) =
 });
 
 router.post('/delete/notes', async (req: Request, res: Response) => {
-    res.json(await note_db.clearUserNotes(req.cookies.user_id));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.clearUserNotes(user_id!));
 });
 
 
@@ -128,18 +130,21 @@ router.post('/delete/notes', async (req: Request, res: Response) => {
 // for tags
 router.post('/new/tag', async (req: Request, res: Response) => {
     const tag = req.body.tag;
-    tag.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    tag.user_id = user_id!;
     res.json(await tag_db.createTag(tag));
 });
 
 router.post('/update/a/tag', async (req: Request, res: Response) => {
     const tag = req.body.tag;
-    tag.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    tag.user_id = user_id!;
     res.json(await tag_db.updateTag(tag));
 });
 
 router.post('/delete/a/tag', async (req: Request, res: Response) => {
-    res.json(await tag_db.deleteTagByUUID(req.cookies.user_id, String(req.query.uuid)));
+    const user_id = getAuth(req).userId;
+    res.json(await tag_db.deleteTagByUUID(user_id!, String(req.query.uuid)));
 });
 
 router.get('/get/user/tags', async (req: Request, res: Response) => {
@@ -147,7 +152,8 @@ router.get('/get/user/tags', async (req: Request, res: Response) => {
 });
 
 router.post('/delete/tags', async (req: Request, res: Response) => {
-    res.json(await tag_db.clearUserTags(req.cookies.user_id));
+    const user_id = getAuth(req).userId;
+    res.json(await tag_db.clearUserTags(user_id!));
 });
 
 
