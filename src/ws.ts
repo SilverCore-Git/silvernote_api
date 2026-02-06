@@ -8,7 +8,6 @@ import __dirname from "./assets/ts/_dirname.js";
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'))
 import notes from "./assets/ts/notes.js";
 import { Note } from "./assets/ts/types.js";
-import type { Share as ShareType } from "./assets/ts/db/share/ShareTypes.js";
 import Share from "./assets/ts/db/share/Share.js";
 
 const httpServer = createServer();
