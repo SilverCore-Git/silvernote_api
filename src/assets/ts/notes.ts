@@ -33,7 +33,7 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
 
             try {
 
-                const res = await nodeFetch('https://db.silvernote.fr/notes' + path, { 
+                const res = await nodeFetch('https://db.silvernote.fr/v2/notes' + path, { 
                     method: opt.method || 'GET',
                     body: opt.body,
                     agent: dbAgent,
