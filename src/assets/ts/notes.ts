@@ -238,8 +238,8 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
                 {
 
                     try {
-                        note.content = decrypt(note.content, note.user_id);
-                        decryptedNotes.push(note);
+                        const decryptedContent = decrypt(note.content, note.user_id);
+                        decryptedNotes.push({ ...note, content: decryptedContent });
                     } catch (e) {
                         console.error("Error on decrypting note : ", note.uuid);
                     }
