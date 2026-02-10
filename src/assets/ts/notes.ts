@@ -275,11 +275,11 @@ import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
             });
 
             if (res.error) {
-                return { error: true, message: "erreur", res };
+                return { error: true, message: "erreur", ...res };
             }
 
             if (res.uuid) {
-                return { success: true, note: note };
+                return { success: true, ...res };
             }
             
             return { error: true, message: "réponse inattendue", res };
