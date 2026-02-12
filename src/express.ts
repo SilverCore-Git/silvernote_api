@@ -126,8 +126,8 @@ async function initializeMCP() {
 async function startServer() 
 {
   await initializeMCP();
-  httpServer.listen(config.PORT, () => {
-    console.log(`Serveur Express sur le port ${config.PORT}`);
+  httpServer.listen(process.env.PORT || config.PORT, () => {
+    console.log(`Serveur Express sur le port ${process.env.PORT || config.PORT}`);
   });
 } 
 
