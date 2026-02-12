@@ -11,17 +11,20 @@ const MASTER_KEY = Buffer.from(rawKey, 'hex');
 const ALGORITHM = 'aes-256-gcm';
 
 
-function getUserKey(userId: string): Buffer {
-    
-    return crypto.hkdfSync(
+function getUserKey(userId: string): Buffer
+{
+
+    const derivedKey = crypto.hkdfSync(
         'sha256',
         MASTER_KEY,
-        Buffer.alloc(0),          // Salt (optionnel, vide ici)
-        `user-key-${userId}`,     // Info : contexte unique
-        32                        // Longueur de clé désirée
-    ) as Buffer;
-    
-}
+        Buffer.alloc(0),          // Salt
+        `user-key-${userId}`,     // Info
+        32                        // Longueur
+    );
+
+    return Buffer.from(derivedKey);
+
+};
 
 function getUserFingerprint(userId: string): string {
     const userKey = getUserKey(userId);

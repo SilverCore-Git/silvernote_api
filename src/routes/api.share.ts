@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Note } from '../assets/ts/types.js';
 import notes from '../assets/ts/notes.js';
 import Share from '../assets/ts/db/share/index.js';
+import { getAuth } from '@clerk/express';
 
 
 const router = Router();
@@ -11,7 +12,8 @@ router.get('/:uuid', async (req, res) => {
 
     const { uuid } = req.params;
     const passwd = req.query.passwd;
-    const visitor_userid = req.cookies.user_id;
+    const visitor_userid = getAuth(req).userId;
+    if (!visitor_userid) return;
 
     const TheShare = await Share.get(uuid);
 
@@ -42,7 +44,7 @@ router.get('/:uuid', async (req, res) => {
             return;
         }
 
-        const note = await notes.getNoteByUUID(TheShare.note_uuid);
+        const note = await notes.getNoteByUUID(TheShare.note_uuid, TheShare.owner_id);
 
         res.json({ 
             success: true, 
@@ -89,7 +91,7 @@ router.get('/:uuid/info', async (req, res) => {
 router.post('/create', async (req, res) => {
 
     const { note_uuid, params } = req.body;
-    const user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
 
     try {
 
@@ -223,7 +225,8 @@ router.post('/:uuid/delete', async (req, res) => {
 
 router.get('/for/me', async (req, res) => {
 
-    const { user_id } = req.cookies;
+    const user_id = getAuth(req).userId;
+    if (!user_id) return;
 
     try {
 
@@ -244,7 +247,7 @@ router.get('/for/me', async (req, res) => {
 
             for (const share of share_for_me) {
 
-                const note: Note | undefined = (await notes.getNoteByUUID(share.note_uuid)).note;
+                const note: Note | undefined = (await notes.getNoteByUUID(share.note_uuid, user_id)).note;
 
                 if (!note) continue;
                 shared_notes.push(note);
@@ -274,7 +277,8 @@ router.get('/for/me', async (req, res) => {
 
 router.get('/by/me', async (req, res) => {
 
-    const user_id = req.cookies.user_id || req.signedCookies.user_id;
+    const user_id = getAuth(req).userId;
+    if (!user_id) return;
 
     try {
 
@@ -286,7 +290,7 @@ router.get('/by/me', async (req, res) => {
 
         for (const share of my_share)
         {
-            const __note = await notes.getNoteByUUID(share.note_uuid);
+            const __note = await notes.getNoteByUUID(share.note_uuid, user_id);
             console.log(share)
             if (!__note.note) continue;
             _notes.push(__note.note);

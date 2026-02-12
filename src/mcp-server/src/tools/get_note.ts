@@ -9,12 +9,13 @@ const get_note: Tool = {
     description: "Get note by UUID",
 
     params: {
-        uuid: z.string().describe('note uuid')
+        uuid: z.string().describe('note uuid'),
+        userId: z.string().describe('note owner id')
     },
 
     handler: async (parms) => {
 
-        const note = (await notes.getNoteByUUID(parms.uuid)).note;
+        const note = (await notes.getNoteByUUID(parms.uuid, parms.userId)).note;
         
         return {
             content: [

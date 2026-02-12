@@ -1,6 +1,7 @@
 import nodeFetch from 'node-fetch';
 import type { Tag } from "./types.js";
 import { randomUUID } from "crypto";
+import { dbAgent } from './db/userDB.js';
 
     class Tags {
 
@@ -34,6 +35,7 @@ import { randomUUID } from "crypto";
         {
             const res = await nodeFetch('https://db.silvernote.fr/tags' + path, { 
                 ...opt,
+                agent: dbAgent,
                 headers: {
                     "Authorization": process.env.DB_API_SK_1 || "",
                     "X-API-Key": process.env.DB_API_SK_2 || "",

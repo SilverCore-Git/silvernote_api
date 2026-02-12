@@ -11,11 +11,12 @@ const add_note_tag: Tool = {
     params: {
         uuid: z.string().describe('note uuid'),
         tagId: z.string().describe('tag id'),
+        userId: z.string().describe('note owner id')
     },
 
     handler: async (parms) => {
 
-        const note = (await notes.getNoteByUUID(parms.uuid)).note;
+        const note = (await notes.getNoteByUUID(parms.uuid, parms.userId)).note;
 
         if (!note) return {
             content: [
