@@ -1,27 +1,16 @@
 import { Router, Request, Response } from 'express';
-import fs from 'fs';
-import type { News } from '../assets/ts/types.js';
 import { clerkClient } from "@clerk/express";
-import { randomUUID } from 'crypto';
+import { randomUUID, UUID } from 'crypto';
 
 
 const router = Router();
 
 
-router.get('/get_news', async (req: Request, res: Response) => {
-
-    const data = await fs.promises.readFile(process.env.CONFIG_PATH || './dist/config.json', 'utf-8'); // remettre ./config pour prod
-    const news: Promise<News> = JSON.parse(data).news;
-
-    res.json( (await news).active ? news : false );
-
-})
-
-router.get('/uuid', (req, res) => {
+router.get('/uuid', (req: Request, res: Response) => {
     res.json({ id: randomUUID() })
 })
 
-router.get('/user/by/id/:userid', async (req, res) => {
+router.get('/user/by/id/:userid', async (req: Request, res: Response) => {
 
     const userid: string = req.params.userid;
     const client_userId = req.cookies.user_id;
@@ -36,6 +25,5 @@ router.get('/user/by/id/:userid', async (req, res) => {
     });
 
 })
-
 
 export default router;

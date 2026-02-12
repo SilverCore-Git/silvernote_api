@@ -11,6 +11,8 @@ import axios from 'axios';
 import FormData from "form-data";
 import downloadFile from "../assets/ts/downloadFile.js";
 import { fileURLToPath } from "url";
+import { getUserFingerprint } from "../assets/ts/utils/scrypto/scrypto.js";
+import { getAuth } from "@clerk/express";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,7 +25,7 @@ router.post('/verify/data', async (req: Request, res: Response) => {
     try {
 
         const { notes, tags } = req.body as { notes: string; tags: string }; // hash of notes and tags
-        const user_id: string | undefined = req.cookies?.user_id;
+        const user_id = getAuth(req).userId;
 
         if (!notes || !tags || !user_id) {
             res.json({ error: true, message: 'Missing parameters.' });
@@ -56,40 +58,59 @@ router.post('/verify/data', async (req: Request, res: Response) => {
 });
 
 
+router.get('/get/scrypto/fingerprint', async (req: Request, res: Response) => {
+
+    const userId = getAuth(req).userId;
+
+    const fingerprint = getUserFingerprint(userId!);
+
+    res.json({ fingerprint });
+
+});
+
+
 
 // for notes
 router.post('/new/note', async (req: Request, res: Response) => {
+    const { userId } = getAuth(req);
     const note = req.body.note;
-    note.user_id = req.cookies.user_id;
+    note.user_id = userId;
     res.json(await note_db.createNote(note));
 });
 
 router.get('/get/a/note', async (req: Request, res: Response) => {
-    res.json(await note_db.getNoteByUUID(req.query.uuid as string));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.getNoteByUUID(req.query.uuid as string, user_id!));
 });
 
 router.post('/update/a/note', async (req: Request, res: Response) => {
     const note = req.body.note;
-    note.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    note.user_id = user_id;
     res.json(await note_db.updateNote(note));
 });
 
 router.post('/delete/a/note', async (req: Request, res: Response) => {
-    res.json(await note_db.deleteNoteByUUID(req.cookies.user_id, req.query.uuid as string));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.deleteNoteByUUID(user_id!, req.query.uuid as string));
 });
 
-router.get('/get/user/notes', async (req: Request, res: Response) => {
+router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) => {
 
-    const userId = req.query.user_id as string;
-    const db_res = await note_db.getNoteByUserId(userId);
+    const noPinned = String(req.query?.noPinned || '0') as '1' | '0';
+    const userId = String(getAuth(req).userId);
+    const start = Number(req.params.start);
+    const end = Number(req.params.end);
+
+    const db_res = await note_db.getNoteByUserIdIndex(userId, start, end, noPinned);
 
     res.json({
         ...db_res,
-        notes: db_res.notes.filter(note => note.title !== '' || note.content !== '')
+        notes: db_res.notes
     });
 
     // identify gost notes
-    const ghostNotes: Note[] = db_res.notes.filter(note => 
+    const ghostNotes: Note[] = db_res.notes.filter((note: Note) => 
         note.title === '' && note.content === ''
         || note.title === '' && note.content === '<p></p>'
     );
@@ -100,8 +121,22 @@ router.get('/get/user/notes', async (req: Request, res: Response) => {
 
 });
 
+router.get('/notes/pinned', async (req, res) => {
+
+    const userId = String(getAuth(req).userId);
+
+    const db_res = await note_db.getPinnedNotesByUserID(userId);
+
+    res.json({
+        ...db_res,
+        notes: db_res.notes
+    });
+
+})
+
 router.post('/delete/notes', async (req: Request, res: Response) => {
-    res.json(await note_db.clearUserNotes(req.cookies.user_id));
+    const user_id = getAuth(req).userId;
+    res.json(await note_db.clearUserNotes(user_id!));
 });
 
 
@@ -109,18 +144,21 @@ router.post('/delete/notes', async (req: Request, res: Response) => {
 // for tags
 router.post('/new/tag', async (req: Request, res: Response) => {
     const tag = req.body.tag;
-    tag.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    tag.user_id = user_id!;
     res.json(await tag_db.createTag(tag));
 });
 
 router.post('/update/a/tag', async (req: Request, res: Response) => {
     const tag = req.body.tag;
-    tag.user_id = req.cookies.user_id;
+    const user_id = getAuth(req).userId;
+    tag.user_id = user_id!;
     res.json(await tag_db.updateTag(tag));
 });
 
 router.post('/delete/a/tag', async (req: Request, res: Response) => {
-    res.json(await tag_db.deleteTagByUUID(req.cookies.user_id, String(req.query.uuid)));
+    const user_id = getAuth(req).userId;
+    res.json(await tag_db.deleteTagByUUID(user_id!, String(req.query.uuid)));
 });
 
 router.get('/get/user/tags', async (req: Request, res: Response) => {
@@ -128,7 +166,8 @@ router.get('/get/user/tags', async (req: Request, res: Response) => {
 });
 
 router.post('/delete/tags', async (req: Request, res: Response) => {
-    res.json(await tag_db.clearUserTags(req.cookies.user_id));
+    const user_id = getAuth(req).userId;
+    res.json(await tag_db.clearUserTags(user_id!));
 });
 
 

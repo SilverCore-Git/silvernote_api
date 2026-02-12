@@ -4,15 +4,8 @@ import { Plan } from "./plan.js";
 export interface User { 
     userId: string;
     customerId?: string;
+    androidToken?: string;
     plan: Plan[];
-};
-
-export interface News { 
-    active: boolean;
-    message: string; 
-    title: string;
-    btn: boolean;
-    href: string;
 };
 
 export interface Layout {
@@ -31,6 +24,7 @@ export interface Note {
     icon?: string;
     title: string;
     content: string;
+    content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted";
     tags?: string[];
     pinned?: boolean;
     created_at?: number;

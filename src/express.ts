@@ -26,6 +26,9 @@ import api_share from './routes/api.share.js';
 import user from './routes/user.js';
 import money from './routes/money.js';
 import admin from './routes/admin.js';
+import resources from './routes/resources.js';
+import notifications from './routes/api.notifications.js';
+import api_2048 from './routes/api.2048.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -80,12 +83,16 @@ app.use(clerkMiddleware());
 
 // Routes
 app.use('/api', api);
-app.use('/api/share', requireAuth(), api_share);
-app.use('/api/ai', api_ai);
 app.use('/user',  user);
 app.use('/admin',  admin);
 app.use('/money',  money);
+app.use('/resources', resources);
+// secured routes
+app.use('/api/ai', requireAuth(), api_ai);
+app.use('/api/share', requireAuth(), api_share);
 app.use('/api/db', requireAuth(),  api_db);
+app.use('/api/notifications', requireAuth(), notifications);
+app.use('/api/2048', requireAuth(), api_2048);
 
 
 app.get('/version', (req, res) => {
@@ -119,8 +126,8 @@ async function initializeMCP() {
 async function startServer() 
 {
   await initializeMCP();
-  httpServer.listen(config.PORT, () => {
-    console.log(`Serveur Express sur le port ${config.PORT}`);
+  httpServer.listen(process.env.PORT || config.PORT, () => {
+    console.log(`Serveur Express sur le port ${process.env.PORT || config.PORT}`);
   });
 } 
 

@@ -69,7 +69,39 @@ class Database {
     }
 
 
+    public setAndroidToken ( userID: string, token: string ): Promise<void> {
 
+        return new Promise( async (resolve, reject) => {
+
+            try {
+
+                const db: User[] = await this.get('user');
+
+                const userIndex = db.findIndex(user => user.userId === userID);
+                
+                if (userIndex === -1) {
+                    throw new Error('Utilisateur non trouvé');
+                }
+
+                if (!db[userIndex].androidToken) {
+                    db[userIndex].androidToken = '';
+                }
+
+                if (db[userIndex].androidToken !== token) {
+                    db[userIndex].androidToken = token;
+                }
+
+                await this.save('user', db);
+
+                resolve();
+
+            } catch (error) {
+                reject(error);
+            }
+
+        });
+
+    }
 
 
     public async new_session ( userID: string ): Promise<Session> {
