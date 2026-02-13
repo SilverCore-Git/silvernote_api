@@ -3,8 +3,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 import __dirname from '../assets/ts/_dirname.js';
-const _config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/jeremy_ai.json'), 'utf-8'))
-const prompt_system = _config.prompt_system;
+const systeme_prompt = fs.readFileSync(path.join(__dirname, './systeme_prompt.md'), 'utf-8');
 import db from '../assets/ts/database.js';
 import { getMCPService } from '../mcp.js';
 import send_to_chatgpt from './api.ai/send_to_chatgpt.js';
@@ -46,7 +45,7 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
             messages: [
                 { 
                     role: "system", 
-                    content: `${prompt_system}. L'utilisateur se nome : ${user.fullName}. Son userID est : ${user.id}.` 
+                    content: systeme_prompt 
                 }
             ]
         };
