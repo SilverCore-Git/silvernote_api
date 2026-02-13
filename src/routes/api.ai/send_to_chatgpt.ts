@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import OpenAI from "openai";
 import { Chat } from './types.js';
 import { getMCPService } from '../../mcp.js';
+import { verifyToken } from '@clerk/express';
 
 const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
@@ -14,8 +15,13 @@ export default async function send_to_chatgpt
 )
 {
 
-    const { uuid, message } = req.body;
+    const { uuid, clerkToken, message } = req.body;
     const note = req.body?.note || undefined;
+
+    const payload = await verifyToken(clerkToken, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+
 
     try {
 
@@ -31,9 +37,18 @@ export default async function send_to_chatgpt
         await mcpService.ensureConnected();
 
         // Construire le message utilisateur avec le contexte
-        const userMessage = note 
-            ? `L'utilisateur est dans la note qui porte comme uuid : ${note}. \n\n Message de l'utilisateur: ${message}` 
-            : `Message de l'utilisateur: ${message}` 
+        const userMessage = 
+            `# Information sur l'utilisateur (utilise seulement ces info) : \n\n`
+            + `
+                - UserID : ${payload.sub}
+                - Nom Prénom : ${payload.name}
+                - Pseudo : ${payload.username}
+                - date : ${new Date().toLocaleString()}
+            `
+            + note 
+                ? `L'utilisateur est dans la note qui porte comme uuid : ${note}.\n\n` 
+                : ''
+            + `Message de l'utilisateur: ${message}` 
 
         // Ajouter le message à l'historique du chat
         chat.messages.push({
