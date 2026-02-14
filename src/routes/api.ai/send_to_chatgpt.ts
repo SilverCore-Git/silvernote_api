@@ -43,6 +43,7 @@ export default async function send_to_chatgpt
                 - UserID : ${payload.sub}
                 - Nom Prénom : ${payload.name}
                 - Pseudo : ${payload.username}
+                - Token de session : ${clerkToken}
                 - date : ${new Date().toLocaleString()}
             `
             + note 
