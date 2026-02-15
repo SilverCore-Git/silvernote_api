@@ -32,7 +32,7 @@ router.post('/verify/data', async (req: Request, res: Response) => {
             return;
         }
 
-        const db_notes: Note[] = (await note_db.getNoteByUserId(user_id)).notes.filter(note => note.title !== '' && note.content !== '');
+        const db_notes: Note[] = (await note_db.getNoteByUserId(user_id)).notes.filter((note: Note) => note.title !== '' && note.content !== '');
         const db_tags: Tag[] = (await tag_db.getTagsByUserId(user_id)).tags;
 
         const db_notes_hash: string = await utils.hash(db_notes);
@@ -94,6 +94,7 @@ router.post('/delete/a/note', async (req: Request, res: Response) => {
     const user_id = getAuth(req).userId;
     res.json(await note_db.deleteNoteByUUID(user_id!, req.query.uuid as string));
 });
+
 
 router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) => {
 
