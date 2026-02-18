@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "node dist/src/app.js",
     "dev:old": "tsc && npm start",
     "build:old": "tsc",
-    "dev": "swc src -w -d dist",
+    "dev": "npm run build && npm start",
     "build": "npm run type-check-once && npm run build-only",
     "type-check-once": "tsc --noEmit",
     "build-only": "swc src -d dist --copy-files"

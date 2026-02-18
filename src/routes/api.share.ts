@@ -225,54 +225,57 @@ router.post('/:uuid/delete', async (req, res) => {
 
 router.get('/for/me', async (req, res) => {
 
-    const user_id = getAuth(req).userId;
-    if (!user_id) return;
+    const auth = getAuth(req);
+    const user_id = auth.userId;
 
-    try {
-
-        const share_db = await Share.getAll();
-
-        if (!share_db.length)
-        {
-            res.json({ length: 0, notes: null });
-            return;
-        }
-        
-        const share_for_me = share_db.filter(share =>
-            share.visitor.includes(user_id) && share.owner_id !== user_id);
-
-        if (share_for_me.length) {
-
-            let shared_notes: Note[] = [];
-
-            for (const share of share_for_me) {
-
-                const note: Note | undefined = (await notes.getNoteByUUID(share.note_uuid, user_id)).note;
-
-                if (!note) continue;
-                shared_notes.push(note);
-
-            }
-
-            res.json({
-                length: shared_notes.length,
-                notes: shared_notes
-            });
-
-        }
-        else {
-            res.json({ length: 0, notes: null });
-            return;
-        }
-
-    }
-    catch (err) {
-        res.status(500).json({ error: true, message: (err as any).message });
-        console.error('Error on /db/share/for/me : ', err)
+    if (!user_id) {
+        res.status(401).json({ error: true, message: "Unauthorized" });
         return;
     }
 
-})
+    try {
+
+
+        const share_db = await Share.getAll();
+        
+        const share_for_me = share_db.filter(share => 
+            share.visitor.includes(user_id) && share.owner_id !== user_id
+        );
+
+        if (share_for_me.length === 0) {
+            res.json({ length: 0, notes: [] });
+            return;
+        }
+
+        const notePromises = share_for_me.map(async (share) => {
+            try {
+                const result = await notes.getNoteByUUID(share.note_uuid, share.owner_id);
+                return result.note;
+            } catch (err) {
+                console.warn(`Could not fetch note ${share.note_uuid}:`, err);
+                return null;
+            }
+        });
+
+        const results = await Promise.all(notePromises);
+
+        const shared_notes = results.filter((note): note is Note => note !== null && note !== undefined);
+
+        res.json({
+            length: shared_notes.length,
+            notes: shared_notes
+        });
+
+    } 
+    catch (err) {
+        console.error('Error on /db/share/for/me:', err);
+        res.status(500).json({ 
+            error: true, 
+            message: err instanceof Error ? err.message : "Internal Server Error" 
+        });
+    }
+
+});
 
 
 router.get('/by/me', async (req, res) => {
@@ -291,7 +294,6 @@ router.get('/by/me', async (req, res) => {
         for (const share of my_share)
         {
             const __note = await notes.getNoteByUUID(share.note_uuid, user_id);
-            console.log(share)
             if (!__note.note) continue;
             _notes.push(__note.note);
         }
