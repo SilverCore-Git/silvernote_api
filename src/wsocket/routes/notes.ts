@@ -45,7 +45,7 @@ export default (io: Server, socket: Socket) => {
             return;
         }
 
-        socket.to(`user:${userId}`).emit('note:update', res.note);
+        socket.to(`user:${userId}`).emit('note:update', note);
 
     })
 

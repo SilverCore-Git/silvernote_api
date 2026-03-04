@@ -41,6 +41,17 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
         const mcpService = getMCPService();
         await mcpService.ensureConnected();
 
+        const existingSession = chats.find(chat => chat.userID === user.id);
+
+        if (existingSession)
+        {
+            res.json({ 
+                success: true, 
+                session: existingSession,
+                mcpConnected: mcpService.isConnected()
+            });
+        }
+
         const session: Chat = { 
             uuid: randomUUID(),
             userID: user.id,
