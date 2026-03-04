@@ -181,9 +181,20 @@ router.post('/:uuid/update', async (req, res) => {
 
         const TheShare = await Share.get(uuid);
 
-        if (TheShare) {
+        if (TheShare) 
+        {
 
-            const updatedShare = { ...TheShare, ...share, params: { passwd: TheShare.params.passwd, ...share.params } };
+            const currentParams = TheShare.params || {};
+            const newParams = share.params || {};
+
+            const updatedShare = {
+                ...TheShare,
+                ...share,
+                params: { 
+                    ...currentParams,
+                    ...newParams
+                }
+            };
 
             await Share.update(updatedShare!);
 
@@ -197,9 +208,9 @@ router.post('/:uuid/update', async (req, res) => {
 
     }
 
-    catch (err) {
-        res.status(500).json({ error: true, message: err });
-        return;
+    catch (err: any) {
+        res.status(500).json({ error: true, message: err.message || err });
+        throw new Error(err);
     }
 
 })
