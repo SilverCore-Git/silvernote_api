@@ -1,16 +1,11 @@
-import { Server } from "socket.io";
-import { createServer } from 'http';
+import { Server, Socket } from "socket.io";
+import notes from "../../assets/ts/notes.js";
+import { Note } from "../../assets/ts/types.js";
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import fs from 'fs';
-import path from 'path';
-import __dirname from "./assets/ts/_dirname.js";
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'), 'utf-8'))
-import notes from "./assets/ts/notes.js";
-import { Note } from "./assets/ts/types.js";
-import Share from "./assets/ts/db/share/Share.js";
+import Share from "../../assets/ts/db/share/Share.js";
 
-const httpServer = createServer();
+
 
 const save_note = async (note: Note): Promise<void> => {
   await notes.updateNote({
@@ -26,12 +21,6 @@ const get_note = async (uuid: string): Promise<Note | undefined> => {
 }
 
 
-const io = new Server(httpServer, {
-  cors: { origin: config.corsOptions.origin },
-  path: "/socket.io/share",
-  transports: ["websocket", "polling"]
-});
-
 const docs = new Map<string, { 
   ydoc: Y.Doc, 
   awareness: awarenessProtocol.Awareness,
@@ -40,11 +29,10 @@ const docs = new Map<string, {
   icon: string
 }>();
 
-io.on("connection", (socket) => {
 
-  console.log("Client connected :", socket.id);
 
-  // Stocker la room du socket pour l'utiliser dans les autres événements
+export default (io: Server, socket: Socket) => {
+
   let currentRoom: string | null = null;
 
   socket.on("join-room", async ({ room, userId }: { room: string, userId: string }) => {
@@ -263,10 +251,4 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
   });
 
-});
-
-console.log("Socket.IO server running...");
-
-httpServer.listen('3434', () => {
-  console.log(`Serveur WebSocket sur le port 3434`);
-});
+};
