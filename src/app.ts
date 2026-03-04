@@ -1,2 +1,2 @@
 import './express.js';
-import './ws.js';
+import './wsocket/ws.js';
