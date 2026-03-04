@@ -22,6 +22,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'ut
 import api from './routes/api.js';
 import api_db from './routes/api.db.js';
 import api_ai from './routes/api.ai.js';
+import api_firebase from './routes/api.firebase.js';
 import api_share from './routes/api.share.js';
 import user from './routes/user.js';
 import money from './routes/money.js';
@@ -89,6 +90,7 @@ app.use('/money',  money);
 app.use('/resources', resources);
 // secured routes
 app.use('/api/ai', requireAuth(), api_ai);
+app.use('/api/firebase', requireAuth(), api_firebase);
 app.use('/api/share', requireAuth(), api_share);
 app.use('/api/db', requireAuth(),  api_db);
 app.use('/api/notifications', requireAuth(), notifications);
@@ -110,7 +112,8 @@ app.use((req: Request, res: Response) => {
 });
 
 
-async function initializeMCP() {
+async function initializeMCP() 
+{
     try {
         console.log('Initializing MCP service...');
         const mcpService = getMCPService();
