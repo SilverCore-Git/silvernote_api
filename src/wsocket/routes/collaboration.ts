@@ -40,7 +40,7 @@ export default (io: Server, socket: Socket) => {
     if (!room) return;
     
     currentRoom = room; // Stocker la room
-    socket.join(room);
+    socket.join(`room:${room}`);
     
     let docData = docs.get(room);
     const share = await Share.get(room);
@@ -93,7 +93,7 @@ export default (io: Server, socket: Socket) => {
         : new Uint8Array(update);
 
       Y.applyUpdate(docData.ydoc, uint8Array);
-      socket.to(currentRoom).emit("y-update", Array.from(uint8Array));
+      socket.to('room:'+currentRoom).emit("y-update", Array.from(uint8Array));
 
     } catch (error) {
       console.error("Error applying update:", error);
@@ -108,7 +108,7 @@ export default (io: Server, socket: Socket) => {
     try {
       if (docData) {
         docData.title = update;
-        socket.to(currentRoom).emit("title-update", update);
+        socket.to('room:'+currentRoom).emit("title-update", update);
       }
     } catch (error) {
       console.error("Error applying update:", error);
@@ -123,7 +123,7 @@ export default (io: Server, socket: Socket) => {
     try {
       if (docData) {
         docData.icon = update;
-        socket.to(currentRoom).emit("icon-update", update);
+        socket.to('room:'+currentRoom).emit("icon-update", update);
         const note: Note | undefined = await get_note(currentRoom);
         if (note) {
           await save_note({
@@ -149,7 +149,7 @@ export default (io: Server, socket: Socket) => {
         : new Uint8Array(update);
       
       awarenessProtocol.applyAwarenessUpdate(docData.awareness, uint8Array, socket);
-      socket.to(currentRoom).emit("awareness-update", Array.from(uint8Array));
+      socket.to('room:'+currentRoom).emit("awareness-update", Array.from(uint8Array));
 
     } catch (error) {
       console.error("Error applying awareness update:", error);
@@ -215,7 +215,7 @@ export default (io: Server, socket: Socket) => {
   );
 
   socket.on('leave-room', ({ room }: { room: string }) => {
-    socket.leave(room);
+    socket.leave('room:' + room);
     if (currentRoom === room) {
       currentRoom = null;
     }

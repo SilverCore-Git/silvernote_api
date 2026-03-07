@@ -24,6 +24,7 @@ export interface Note {
     icon?: string;
     title: string;
     content: string;
+    ydoc_content?: number[];
     content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted";
     tags?: string[];
     pinned?: boolean;

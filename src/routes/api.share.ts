@@ -173,7 +173,7 @@ router.post('/:uuid/ban', async (req, res) => {
 
 router.post('/:uuid/update', async (req, res) => {
 
-    const { share } = req.body;
+    const share = req.body.share;
     const uuid = req.params.uuid;
 
 
@@ -184,8 +184,8 @@ router.post('/:uuid/update', async (req, res) => {
         if (TheShare) 
         {
 
-            const currentParams = TheShare.params || {};
-            const newParams = share.params || {};
+            const currentParams = TheShare?.params || {};
+            const newParams = share?.params || {};
 
             const updatedShare = {
                 ...TheShare,
