@@ -72,7 +72,13 @@ async function useRoom (roomId: string)
       note,
       owner: note.user_id,
 
-      share,
+      share: {
+        ...share,
+        params: {
+          ...share.params,
+          passwd: undefined
+        }
+      },
 
       ydoc,
       awareness,

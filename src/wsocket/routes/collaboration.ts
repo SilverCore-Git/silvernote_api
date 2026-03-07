@@ -1,82 +1,44 @@
 import { Server, Socket } from "socket.io";
-import notes from "../../assets/ts/notes.js";
 import { Note } from "../../assets/ts/types.js";
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import Share from "../../assets/ts/db/share/Share.js";
+import useRoom from "../../assets/ts/composables/useRoom.js";
+import { clerkClient } from "@clerk/express";
 
-
-
-const save_note = async (note: Note): Promise<void> => {
-  await notes.updateNote({
-    ...note,
-    updated_at: new Date().getTime()
-  });
-}
-
-
-const get_note = async (uuid: string): Promise<Note | undefined> => {
-  const res = await notes.getNoteByUUIDNoUserID(uuid);
-  if (res.note) return res.note;
-}
-
-
-const docs = new Map<string, { 
-  ydoc: Y.Doc, 
-  awareness: awarenessProtocol.Awareness,
-  saveInterval?: NodeJS.Timeout,
-  title: string,
-  icon: string
-}>();
 
 
 
 export default (io: Server, socket: Socket) => {
 
-  let currentRoom: string | null = null;
+  socket.on("join-room", async ({ room: roomId }: { room: string }) => {
 
-  socket.on("join-room", async ({ room, userId }: { room: string, userId: string }) => {
+    if (!roomId) return;
+    const userId = socket.data.userId;
+        
+    const { room } = await useRoom(roomId);
 
-    if (!room) return;
-    
-    currentRoom = room; // Stocker la room
-    socket.join(`room:${room}`);
-    
-    let docData = docs.get(room);
-    const share = await Share.get(room);
-
-    if (!docData)
-    {
-
-      const ydoc = new Y.Doc();
-      const awareness = new awarenessProtocol.Awareness(ydoc);
-      const note = await get_note(room);
-      
-      const title = note?.title || "";
-      const icon = note?.icon || "";
-
-      const saveInterval = setInterval(async () => {
-        clearInterval(saveInterval);
-      }, 10000);
-
-      docs.set(room, { ydoc, awareness, saveInterval, title, icon });
-      docData = { ydoc, awareness, saveInterval, title, icon };
-
+    if (userId !== room.owner && !room.share.visitor.includes(userId)) {
+      socket.emit('error', 'Unauthorized');
+      return;
     }
 
-    const { ydoc, awareness } = docData;
+    socket.join('room:' + roomId);
 
-    const initialState = Y.encodeStateAsUpdate(ydoc);
-    const stateArray = Array.from(initialState);
-    socket.emit("sync", stateArray);
-    
-    socket.emit("title-update", docData.title);
-    socket.emit("icon-update", docData.icon);
+
+    socket.emit("initial-state", ({ room }));
     
     if (userId)
     {
-      if (share && userId == share.owner_id) return;
-      socket.emit('new_user', userId);
+      if (room.share && userId == room.share.owner_id) return;
+      const user = await clerkClient.users.getUser(userId);
+      socket.to('room:'+roomId).emit('user-join', { user: { 
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullname: user.fullName,
+        imageUrl: user.imageUrl,
+      } });
     }
 
   });
