@@ -89,6 +89,8 @@ async function useRoom (roomId: string)
 
     }
 
+    Y.applyUpdate(ydoc, room.note.ydoc_content!, 'database');
+
     rooms.set(roomId, room);
 
   }

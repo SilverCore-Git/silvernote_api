@@ -70,12 +70,10 @@ export default (io: Server, socket: Socket) => {
 
     try {
 
-      const uint8Array = update instanceof Uint8Array 
-        ? update 
-        : new Uint8Array(update);
+      const uint8Array = Buffer.isBuffer(update) ? update : new Uint8Array(update);
 
       Y.applyUpdate(room.ydoc, uint8Array);
-      socket.to('room:'+roomId).emit("y-update", { roomId, update: Array.from(uint8Array) });
+      socket.to('room:'+roomId).emit("y-update", { roomId, update: uint8Array });
 
     } 
     catch (error) 
@@ -200,6 +198,13 @@ export default (io: Server, socket: Socket) => {
 
     }
   );
+
+  socket.on('save-room', async ({ room: roomId }: { room: string }) => {
+
+    const { save } = await useRoomMiddleware(socket, roomId);
+    await save();
+
+  })
 
   socket.on('leave-room', async ({ room: roomId }: { room: string }) => {
 
