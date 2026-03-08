@@ -4,6 +4,7 @@ import { Note } from "../types.js";
 import notes from "../notes.js";
 import Share from "../db/share/Share.js";
 import { type Share as ShareType } from "../db/share/ShareTypes.js";
+import type { Server, Socket } from "socket.io";
 
 
 export interface Room {
@@ -11,6 +12,7 @@ export interface Room {
   id: string; // note id
   note: Note;
   owner: string; // note owner id
+  saveInterval?: NodeJS.Timeout;
 
   // for shared notes
   share: ShareType;
@@ -92,23 +94,72 @@ async function useRoom (roomId: string)
   }
 
 
-  const save = () => {
+  const save = async () => {
 
-    if (!room) return;
+      if (!room) return;
 
-    const updatedNote = room.note;
-    room.note.ydoc_content = Array.from(Y.encodeStateAsUpdate(room.ydoc));
-    room.note.updated_at = new Date().getTime();
+      try {
+        
+          const update = Y.encodeStateAsUpdate(room.ydoc);
+          const ydocBuffer = Buffer.from(update);
+          
+          room.note.ydoc_content = ydocBuffer;
+          room.note.updated_at = Date.now();
 
-    notes.updateNote(updatedNote);
-    Share.update(room.share);
+          await Promise.all([
+              notes.updateNote(room.note),
+              Share.update(room.share)
+          ]);
+          
+          console.log(`[Room ${room.id}] Saved successfully`);
+
+      } 
+      catch (error) 
+      {
+          console.error("Erreur lors de la sauvegarde de la room : ", error);
+      }
+
+  };
+
+  const checkAuth = ({ userId, socket }: { userId: string, socket: Socket }) => {
+
+    if (userId !== room.owner && !room.share.visitor.includes(userId))
+    {
+      socket.emit('error', 'Unauthorized');
+      return false;
+    }
+    return true;
 
   }
+
+  if (!room.saveInterval) room.saveInterval = setInterval(save, 10000);
+
+  const leave = async (io: Server) => {
+
+    if (!io || !room) return;
+
+    const clients = io.sockets.adapter.rooms.get(`room:${roomId}`);
+    const numClients = clients ? clients.size : 0;
+
+    if (numClients === 0) 
+    {
+
+      await save();
+      clearInterval(room.saveInterval);
+      room.awareness.destroy();
+      room.ydoc.destroy();
+      rooms.delete(roomId);
+
+    }
+
+  };
 
 
   return {
     room,
-    save
+    checkAuth,
+    save,
+    leave
   }
 
 }
