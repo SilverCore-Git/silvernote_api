@@ -91,33 +91,43 @@ async function useRoom (roomId: string)
 
     }
 
-    if (room.note.ydoc_content && room.note.content_type == 'ydoc')
+    if (room.note.content_type == 'ydoc')
     {
-      Y.applyUpdate(ydoc, room.note.ydoc_content, 'database');
+      if (room.note.ydoc_content) Y.applyUpdate(ydoc, room.note.ydoc_content, 'database');
     }
-    else if (room.note.content && room.note.content_type == 'text/html/crypted')
+    else if (room.note.content_type == 'text/html/crypted' || room.note.content_type == 'text/html')
     {
 
       try {
 
-          const decryptedContent = decrypt(room.note.content, room.note.user_id);
+          let decryptedContent = room.note.content;
+
+          if (room.note.content_type == 'text/html/crypted')
+          {
+            decryptedContent = decrypt(room.note.content, room.note.user_id);
+          }
+
+          if (!decryptedContent || decryptedContent.trim() === '')
+          {
+              decryptedContent = '<p></p>'; 
+          }
 
           const tempDoc = TiptapTransformer.toYdoc(decryptedContent, 'default');
           const state = Y.encodeStateAsUpdate(tempDoc);
-
           Y.applyUpdate(ydoc, state, 'migration-html');
+
           room.note.content_type = 'ydoc';
 
       } 
       catch (err) 
       {
-          console.error(`[Room ${roomId}] Migration failed : `, err);
+          throw new Error(`[Room ${roomId}] Migration failed : ${err}`);
       }
 
     }
     else
     {
-      throw new Error("Invalid content type");
+      throw new Error(`Invalid content type : ${JSON.stringify(room.note, null, 2)}`);
     }
 
     rooms.set(roomId, room);
