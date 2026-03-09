@@ -5,6 +5,8 @@ import notes from "../notes.js";
 import Share from "../db/share/Share.js";
 import { type Share as ShareType } from "../db/share/ShareTypes.js";
 import type { Server, Socket } from "socket.io";
+import { TiptapTransformer } from '@hocuspocus/transformer';
+import { decrypt } from "../utils/scrypto/scrypto.js";
 
 
 export interface Room {
@@ -89,7 +91,34 @@ async function useRoom (roomId: string)
 
     }
 
-    Y.applyUpdate(ydoc, room.note.ydoc_content!, 'database');
+    if (room.note.ydoc_content && room.note.content_type == 'ydoc')
+    {
+      Y.applyUpdate(ydoc, room.note.ydoc_content, 'database');
+    }
+    else if (room.note.content && room.note.content_type == 'text/html/crypted')
+    {
+
+      try {
+
+          const decryptedContent = decrypt(room.note.content, room.note.user_id);
+
+          const tempDoc = TiptapTransformer.toYdoc(decryptedContent, 'default');
+          const state = Y.encodeStateAsUpdate(tempDoc);
+
+          Y.applyUpdate(ydoc, state, 'migration-html');
+          room.note.content_type = 'ydoc';
+
+      } 
+      catch (err) 
+      {
+          console.error(`[Room ${roomId}] Migration failed : `, err);
+      }
+
+    }
+    else
+    {
+      throw new Error("Invalid content type");
+    }
 
     rooms.set(roomId, room);
 
