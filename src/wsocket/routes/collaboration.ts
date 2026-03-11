@@ -63,6 +63,19 @@ export default (io: Server, socket: Socket) => {
 
   });
 
+  socket.on('get-initial-state', async ({ roomId }: { roomId: string }) => {
+
+    if (!roomId) return;
+    const { room } = await useRoomMiddleware(socket, roomId);
+
+    socket.emit("initial-state", {
+        note: room.note,
+        share: room.share,
+        ydocState: Y.encodeStateAsUpdate(room.ydoc)
+    });
+  
+  });
+
   socket.on("y-update", async ({ roomId, update }: { roomId: string, update: Uint8Array | number[] }) => {
     
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
@@ -201,17 +214,19 @@ export default (io: Server, socket: Socket) => {
 
   socket.on('save-room', async ({ room: roomId }: { room: string }) => {
 
-    const { save } = await useRoomMiddleware(socket, roomId);
+    const { save, room } = await useRoomMiddleware(socket, roomId);
     await save();
+    socket.emit('note:update', room.note);
 
   })
 
   socket.on('leave-room', async ({ room: roomId }: { room: string }) => {
 
-    const { leave } = await useRoomMiddleware(socket, roomId);
+    const { leave, room } = await useRoomMiddleware(socket, roomId);
 
-    await leave(io);
+    await leave();
     socket.leave('room:' + roomId);
+    socket.emit('note:update', room.note);
 
   });
 
@@ -227,7 +242,7 @@ export default (io: Server, socket: Socket) => {
         const roomId = roomName.replace('room:', '');
         const { leave } = await useRoom(roomId);
         
-        setImmediate(() => leave(io));
+        setImmediate(() => leave());
         
       }
 

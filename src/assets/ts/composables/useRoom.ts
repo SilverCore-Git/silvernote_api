@@ -4,7 +4,7 @@ import { Note } from "../types.js";
 import notes from "../notes.js";
 import Share from "../db/share/Share.js";
 import { type Share as ShareType } from "../db/share/ShareTypes.js";
-import type { Server, Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { TiptapTransformer } from '@hocuspocus/transformer';
 import { decrypt } from "../utils/scrypto/scrypto.js";
 
@@ -93,26 +93,26 @@ async function useRoom (roomId: string)
 
     if (room.note.content_type == 'ydoc')
     {
-      if (room.note.ydoc_content) Y.applyUpdate(ydoc, room.note.ydoc_content, 'database');
+      if (room.note.ydoc_content) Y.applyUpdate(ydoc, room.note.ydoc_content as Buffer, 'database');
     }
     else if (room.note.content_type == 'text/html/crypted' || room.note.content_type == 'text/html')
     {
 
       try {
 
-          let decryptedContent = room.note.content;
+          let content = room.note.content;
 
           if (room.note.content_type == 'text/html/crypted')
           {
-            decryptedContent = decrypt(room.note.content, room.note.user_id);
+            content = decrypt(room.note.content, room.note.user_id);
           }
 
-          if (!decryptedContent || decryptedContent.trim() === '')
+          if (!content || content.trim() === '')
           {
-              decryptedContent = '<p></p>'; 
+              content = '<p></p>'; 
           }
 
-          const tempDoc = TiptapTransformer.toYdoc(decryptedContent, 'default');
+          const tempDoc = TiptapTransformer.toYdoc(content, 'default');
           const state = Y.encodeStateAsUpdate(tempDoc);
           Y.applyUpdate(ydoc, state, 'migration-html');
 
@@ -145,6 +145,7 @@ async function useRoom (roomId: string)
           const ydocBuffer = Buffer.from(update);
           
           room.note.ydoc_content = ydocBuffer;
+          room.note.content_type = 'ydoc';
           room.note.updated_at = Date.now();
 
           await Promise.all([
@@ -175,23 +176,15 @@ async function useRoom (roomId: string)
 
   if (!room.saveInterval) room.saveInterval = setInterval(save, 10000);
 
-  const leave = async (io: Server) => {
+  const leave = async () => {
+  
+    clearInterval(room.saveInterval);
+    await save();
 
-    if (!io || !room) return;
+    room.awareness.destroy();
+    room.ydoc.destroy();
+    rooms.delete(roomId);
 
-    const clients = io.sockets.adapter.rooms.get(`room:${roomId}`);
-    const numClients = clients ? clients.size : 0;
-
-    if (numClients === 0) 
-    {
-
-      await save();
-      clearInterval(room.saveInterval);
-      room.awareness.destroy();
-      room.ydoc.destroy();
-      rooms.delete(roomId);
-
-    }
 
   };
 

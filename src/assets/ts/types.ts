@@ -23,8 +23,8 @@ export interface Note {
     user_id: string;
     icon?: string;
     title: string;
-    content: string;
-    ydoc_content?: Buffer;
+    content: string; // crypted doc
+    ydoc_content?: Buffer; // opened doc 
     content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted" | "ydoc";
     tags?: string[];
     pinned?: boolean;
