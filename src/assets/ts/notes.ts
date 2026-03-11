@@ -89,7 +89,14 @@ class Notes {
 
         if (note.content_type == 'ydoc') 
         {
-            note.ydoc_content = decryptBuffer(note.content, note.user_id);
+
+            if (looksEncrypted(note.content)) {
+                note.ydoc_content = decryptBuffer(note.content, note.user_id);
+            }
+
+            note.icon = decrypt(note.icon || '', note.user_id);
+            note.title = decrypt(note.title, note.user_id);
+
         }
         else if (looksEncrypted(note.content)) 
         {
@@ -119,9 +126,14 @@ class Notes {
 
         if (noteToStore.content_type == 'ydoc')
         {
-            noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
+
+            noteToStore.content = encryptBuffer(noteToStore?.ydoc_content as Buffer || Buffer.from(''), note.user_id);
             noteToStore.ydoc_content = Buffer.from('');
             noteToStore.content_type = "ydoc";
+
+            noteToStore.title = encrypt(noteToStore.title || '', note.user_id);
+            noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
+
         }
         else if (noteToStore.content) 
         {
@@ -153,7 +165,7 @@ class Notes {
 
         const res = await this.fetch(`/user/justID/id/${uuid}`);
         if (!res?.notes?.length) {
-            return { error: true, message: "Note introuvable" };
+            return { error: true, note: undefined, message: "Note introuvable" };
         }
 
         const note = this.fullyDecryptNote(res.notes[0]);
@@ -218,6 +230,9 @@ class Notes {
             noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
             noteToStore.ydoc_content = Buffer.from('');
             noteToStore.content_type = "ydoc"
+
+            noteToStore.title = encrypt(noteToStore.title, note.user_id);
+            noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
 
         }
         else

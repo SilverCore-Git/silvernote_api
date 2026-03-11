@@ -4,8 +4,7 @@ import { Note } from "../types.js";
 import notes from "../notes.js";
 import Share from "../db/share/Share.js";
 import { type Share as ShareType } from "../db/share/ShareTypes.js";
-import { Server, Socket } from "socket.io";
-import { TiptapTransformer } from '@hocuspocus/transformer';
+import { Socket } from "socket.io";
 import { decrypt } from "../utils/scrypto/scrypto.js";
 
 
@@ -93,7 +92,7 @@ async function useRoom (roomId: string)
 
     if (room.note.content_type == 'ydoc')
     {
-      if (room.note.ydoc_content) Y.applyUpdate(ydoc, room.note.ydoc_content as Buffer, 'database');
+      if (room.note.ydoc_content && room.note.ydoc_content.length > 0) Y.applyUpdate(ydoc, room.note.ydoc_content as Buffer, 'database');
     }
     else if (room.note.content_type == 'text/html/crypted' || room.note.content_type == 'text/html')
     {
@@ -111,10 +110,6 @@ async function useRoom (roomId: string)
           {
               content = '<p></p>'; 
           }
-
-          const tempDoc = TiptapTransformer.toYdoc(content, 'default');
-          const state = Y.encodeStateAsUpdate(tempDoc);
-          Y.applyUpdate(ydoc, state, 'migration-html');
 
           room.note.content_type = 'ydoc';
 
