@@ -223,7 +223,7 @@ class Notes {
     }
 
 
-    public async updateNote(note: Note) 
+    public async updateNote(note: Note, params?: { noContent: boolean }) 
     {
 
         if (!note.uuid || !note.user_id) {
@@ -235,9 +235,20 @@ class Notes {
         if (noteToStore.content_type == 'ydoc')
         {
 
-            noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
-            noteToStore.ydoc_content = Buffer.from('');
-            noteToStore.content_type = "ydoc/crypted";
+            if (params?.noContent)
+            {
+                const oldNote = (await this.getNoteByUUID(note.uuid, note.user_id)).note;
+                if (!oldNote) return { error: true, message: "Note introuvable" };
+                noteToStore.content = encryptBuffer(oldNote.ydoc_content as Buffer, note.user_id);
+                noteToStore.ydoc_content = Buffer.from('');
+                noteToStore.content_type = "ydoc/crypted";
+            }
+            else 
+            {
+                noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
+                noteToStore.ydoc_content = Buffer.from('');
+                noteToStore.content_type = "ydoc/crypted";
+            }
 
             noteToStore.title = encrypt(noteToStore.title, note.user_id);
             noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
