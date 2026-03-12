@@ -70,7 +70,7 @@ router.get('/:uuid/info', async (req, res) => {
     const _share = await Share.get(uuid);
 
     if (!_share) {
-        res.json({ success: false, error: true, message: 'Partage non trouvée.' });
+        res.status(404).json({ success: false, error: true, message: 'Partage non trouvée.' });
         return;
     }
 
