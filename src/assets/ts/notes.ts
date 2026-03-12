@@ -87,25 +87,33 @@ class Notes {
 
         if (!note?.content) return note;
 
-        if (note.content_type == 'ydoc') 
+        if (note.content_type == 'ydoc/crypted') 
         {
 
-            if (looksEncrypted(note.content)) {
+            if (looksEncrypted(note.content)) 
+            {
                 note.ydoc_content = decryptBuffer(note.content, note.user_id);
             }
 
             note.icon = decrypt(note.icon || '', note.user_id);
             note.title = decrypt(note.title, note.user_id);
 
+            note.content_type = 'ydoc';
+
         }
-        else if (looksEncrypted(note.content)) 
+        else if (looksEncrypted(note.content) && note.content_type == 'text/html/crypted') 
         {
             const decrypted = this.fullyDecryptContent(note.content, note.user_id);
+
+            note.icon = looksEncrypted(note.icon) ? decrypt(note.icon || '', note.user_id) : note.icon;
+            note.title = looksEncrypted(note.title) ? decrypt(note.title, note.user_id) : note.title;
+
             return {
                 ...note,
                 content: decrypted,
                 content_type: "text/html"
             };
+
         }
 
         return note;
@@ -129,7 +137,7 @@ class Notes {
 
             noteToStore.content = encryptBuffer(noteToStore?.ydoc_content as Buffer || Buffer.from(''), note.user_id);
             noteToStore.ydoc_content = Buffer.from('');
-            noteToStore.content_type = "ydoc";
+            noteToStore.content_type = "ydoc/crypted";
 
             noteToStore.title = encrypt(noteToStore.title || '', note.user_id);
             noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
@@ -229,7 +237,7 @@ class Notes {
 
             noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
             noteToStore.ydoc_content = Buffer.from('');
-            noteToStore.content_type = "ydoc"
+            noteToStore.content_type = "ydoc/crypted";
 
             noteToStore.title = encrypt(noteToStore.title, note.user_id);
             noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);

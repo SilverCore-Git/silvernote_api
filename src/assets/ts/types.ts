@@ -25,7 +25,7 @@ export interface Note {
     title: string;
     content: string; // crypted doc
     ydoc_content?: Buffer; // opened doc 
-    content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted" | "ydoc";
+    content_type?: "text/plain" | "text/markdown" | "text/html" | "text/html/crypted" | "ydoc" | "ydoc/crypted";
     tags?: string[];
     pinned?: boolean;
     created_at?: number;
