@@ -18,17 +18,20 @@ router.get('/:uuid', async (req, res) => {
 
     const TheShare = await Share.get(uuid);
 
-    if (TheShare) {
+    if (TheShare)
+    {
 
         // verify banned
-        if (TheShare.banned.includes(visitor_userid)) {
-            res.json({ success: false, banned: true });
+        if (TheShare.banned.includes(visitor_userid)) 
+        {
+            res.status(403).json({ success: false, banned: true });
             return;
         }
 
         // verify passwd
-        if (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string)) {
-            res.json({ success: false, need: 'passwd' });
+        if (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string)) 
+        {
+            res.status(403).json({ success: false, need: 'passwd' });
             return;
         }
 
@@ -39,9 +42,10 @@ router.get('/:uuid', async (req, res) => {
         const now = Date.now();
         const isExpired: boolean = now - createdTime > TheShare.params.age;
 
-        if (TheShare.params.age !== -1 && isExpired) {
+        if (TheShare.params.age !== -1 && isExpired) 
+        {
             Share.delete(uuid);
-            res.json({ expired: isExpired });
+            res.status(403).json({ expired: isExpired });
             return;
         }
 
@@ -59,8 +63,9 @@ router.get('/:uuid', async (req, res) => {
 
     }
 
-    else {
-        res.json({ error: true, message: 'Partage non trouvée.' })
+    else 
+    {
+        res.status(404).json({ error: true, message: 'Partage non trouvée.' })
     }
 
 })

@@ -144,8 +144,7 @@ async function useRoom (roomId: string)
           room.note.updated_at = Date.now();
 
           await Promise.all([
-              notes.updateNote(room.note),
-              Share.update(room.share)
+              notes.updateNote(room.note)
           ]);
           
           console.log(`[Room ${room.id}] Saved successfully`);
