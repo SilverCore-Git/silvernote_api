@@ -3,6 +3,7 @@ import type { Note } from '../assets/ts/types.js';
 import notes from '../assets/ts/notes.js';
 import Share from '../assets/ts/db/share/index.js';
 import { getAuth } from '@clerk/express';
+import { getUser } from '../assets/ts/utils/getUser.js';
 
 
 const router = Router();
@@ -51,7 +52,8 @@ router.get('/:uuid', async (req, res) => {
             editable: TheShare.params.editable, 
             note: note.note, 
             user_id: TheShare.owner_id,
-            visitor: TheShare.visitor
+            owner_id: TheShare.owner_id,
+            visitor: await Promise.all(TheShare.visitor.map(async (id) => { return { ...(await getUser(id)), isMe: id === visitor_userid }; })),
         });
         return;
 
