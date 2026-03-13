@@ -66,7 +66,7 @@ class Notes {
         }
     }
 
-    private fullyDecryptContent(content: string, userId: string): string {
+    private fullyDecrypt(content: string, userId: string): string {
         let current = content;
 
         while (looksEncrypted(current)) 
@@ -85,8 +85,6 @@ class Notes {
     private fullyDecryptNote(note: Note): Note 
     {
 
-        if (!note?.content) return note;
-
         if (note.content_type == 'ydoc/crypted') 
         {
 
@@ -101,12 +99,13 @@ class Notes {
             note.content_type = 'ydoc';
 
         }
-        else if (looksEncrypted(note.content) && note.content_type == 'text/html/crypted') 
+        else if (note.content_type == 'text/html/crypted') 
         {
-            const decrypted = this.fullyDecryptContent(note.content, note.user_id);
 
-            note.icon = looksEncrypted(note.icon) ? decrypt(note.icon || '', note.user_id) : note.icon;
-            note.title = looksEncrypted(note.title) ? decrypt(note.title, note.user_id) : note.title;
+            const decrypted = this.fullyDecrypt(note.content, note.user_id);
+
+            note.icon = looksEncrypted(note.icon) ? this.fullyDecrypt(note.icon || '', note.user_id) : note.icon;
+            note.title = looksEncrypted(note.title) ? this.fullyDecrypt(note.title, note.user_id) : note.title;
 
             return {
                 ...note,
@@ -235,7 +234,7 @@ class Notes {
         if (noteToStore.content_type == 'ydoc')
         {
 
-            if (params?.noContent)
+            if (params?.noContent && params?.noContent == true)
             {
                 const oldNote = (await this.getNoteByUUID(note.uuid, note.user_id)).note;
                 if (!oldNote) return { error: true, message: "Note introuvable" };

@@ -226,7 +226,7 @@ export default (io: Server, socket: Socket) => {
 
     await leave();
     socket.leave('room:' + roomId);
-    socket.emit('note:update', room.note);
+    io.to(`room:${roomId}`).emit('note:update', room.note);
 
   });
 

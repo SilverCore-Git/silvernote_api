@@ -36,7 +36,9 @@ const httpServer = createServer(app);
 import { getMCPService } from './mcp.js';
 
 // Middlewares
-const corsOptionsDelegate = function (req: Request, callback: any) {
+const corsOptionsDelegate = function (req: Request, callback: any) 
+{
+
   const origin = req.header('Origin');
   const allowedOrigins = config.corsOptions.origin;
    let corsOptions;
@@ -65,6 +67,7 @@ const corsOptionsDelegate = function (req: Request, callback: any) {
   }
 
   callback(null, corsOptions);
+  
 };
 
 app.use(cors(corsOptionsDelegate));
