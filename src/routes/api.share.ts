@@ -57,7 +57,15 @@ router.get('/:uuid', async (req, res) => {
             note: note.note, 
             user_id: TheShare.owner_id,
             owner_id: TheShare.owner_id,
-            visitor: await Promise.all(TheShare.visitor.map(async (id) => { return { ...(await getUser(id)), isMe: id === visitor_userid }; })),
+            visitor: await Promise.all(
+                TheShare.visitor.map(async (id) => { 
+                    return { 
+                        ...(await getUser(id)), 
+                        isMe: id === visitor_userid, 
+                        type: TheShare.owner_id === id ? 'owner' : 'visitor'
+                    }; 
+                })
+            ),
         });
         return;
 

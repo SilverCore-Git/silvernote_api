@@ -33,7 +33,7 @@ export default (io: Server, socket: Socket) => {
     const userId = socket.data.userId;
         
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
-    if (!isAuthorized) return;
+    //if (!isAuthorized) return;
 
     socket.join('room:' + roomId);
 
