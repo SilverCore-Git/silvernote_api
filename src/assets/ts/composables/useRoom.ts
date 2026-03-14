@@ -16,7 +16,7 @@ export interface Room {
   saveInterval?: NodeJS.Timeout;
 
   // for shared notes
-  share: ShareType;
+  share?: ShareType;
 
   ydoc: Y.Doc; 
   awareness: awarenessProtocol.Awareness;
@@ -65,7 +65,6 @@ async function useRoom (roomId: string)
       });
 
       share = await Share.get(roomId);
-      if (!share) throw new Error("Share not found");
 
     }
 
@@ -75,13 +74,13 @@ async function useRoom (roomId: string)
       note,
       owner: note.user_id,
 
-      share: {
+      share: share ? {
         ...share,
         params: {
           ...share.params,
           passwd: undefined
         }
-      },
+      } : undefined,
 
       ydoc,
       awareness,
@@ -159,7 +158,7 @@ async function useRoom (roomId: string)
 
   const checkAuth = ({ userId, socket }: { userId: string, socket: Socket }) => {
 
-    if (userId !== room.owner && !room.share.visitor.includes(userId))
+    if (userId !== room.owner && !room.share?.visitor.includes(userId))
     {
       socket.emit('error', 'Unauthorized');
       return false;
