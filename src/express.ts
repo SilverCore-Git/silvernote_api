@@ -5,7 +5,6 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { createServer } from 'http';
-import { SilverIssueMiddleware, webhook } from './lib/silverissue/index.js';
 import AllowedOriginCheck from './middleware/AllowedOriginCheck.js';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
 import { fileURLToPath } from 'url';
@@ -76,7 +75,6 @@ app.use(cookieParser(process.env.COOKIE_SIGN_KEY));
 app.use(morgan('dev'));
 
 // app.use(AllowedOriginCheck);
-app.use(SilverIssueMiddleware);
 
 app.use(express.json({ limit: "1000mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -102,10 +100,6 @@ app.use('/api/2048', requireAuth(), api_2048);
 
 app.get('/version', (req, res) => {
   res.json({ v: pkg.version })
-})
-
-app.get('/discord_webhook_test', (req, res) => {
-  if (req.query.mdp === process.env.SECRET_AI_API_KEY) webhook.sendMessage('test de webhook !');
 })
 
 
