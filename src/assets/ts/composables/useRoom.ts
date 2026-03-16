@@ -42,31 +42,6 @@ async function useRoom (roomId: string)
     const awareness = new awarenessProtocol.Awareness(ydoc);
 
     if (!note) throw new Error("Note not found");
-    if (!share)
-    {
-
-      await Share.add({
-
-        uuid: roomId,
-        note_uuid: roomId,
-        owner_id: note.user_id,
-
-        params: {
-          age: -1,
-          editable: true,
-        },
-
-        visitor: [],
-        banned: [],
-
-        created_at: new Date().toISOString(),
-        expires_at: '',
-
-      });
-
-      share = await Share.get(roomId);
-
-    }
 
     room = {
 
