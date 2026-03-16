@@ -4,7 +4,7 @@ import admin, { ServiceAccount } from 'firebase-admin';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
-const filePath = join(process.cwd(), 'src/private/silvernote-f5a5a-firebase-adminsdk-fbsvc-88c7536f72.json');
+const filePath = join(process.cwd(), process.env.FIREBASE_ADMIN_SDK_PATH || '');
 const serviceAccount = JSON.parse(readFileSync(filePath, 'utf8'));
 
 admin.initializeApp({
