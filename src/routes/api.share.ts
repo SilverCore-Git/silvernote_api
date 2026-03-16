@@ -12,7 +12,7 @@ const router = Router();
 router.get('/:uuid', async (req, res) => {
 
     const { uuid } = req.params;
-    const passwd = req.query.passwd;
+    const passwd = req.query?.passwd || '';
     const visitor_userid = getAuth(req).userId;
     if (!visitor_userid) return;
 
@@ -29,7 +29,10 @@ router.get('/:uuid', async (req, res) => {
         }
 
         // verify passwd
-        if (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string)) 
+        if (
+            (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string))
+            && TheShare.owner_id !== visitor_userid
+        ) 
         {
             res.status(403).json({ success: false, need: 'passwd' });
             return;
@@ -58,7 +61,7 @@ router.get('/:uuid', async (req, res) => {
             user_id: TheShare.owner_id,
             owner_id: TheShare.owner_id,
             visitor: await Promise.all(
-                TheShare.visitor.map(async (id) => { 
+                [ ...TheShare.visitor, TheShare.owner_id ].map(async (id) => { 
                     return { 
                         ...(await getUser(id)), 
                         isMe: id === visitor_userid, 
