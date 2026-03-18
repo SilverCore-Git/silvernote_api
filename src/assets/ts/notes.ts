@@ -114,6 +114,18 @@ class Notes {
             };
 
         }
+        else if (note.content_type == undefined)
+        {
+            if (note.content && looksEncrypted(note.content))
+            {
+                note.content = this.fullyDecrypt(note.content, note.user_id);
+                note.content_type = "text/html";
+            }
+            else
+            {
+                note.content_type = "text/html";
+            }
+        }
 
         return note;
 
