@@ -26,13 +26,10 @@ router.get('/', async (req: Request, res: Response) => {
 
         const readers = n.readBy || [];
         const isRead = readers.includes(client_userId);
-        
-        const notifDate = new Date(n.date).getTime();
-        const now = new Date().getTime();
-        const oneDayInMs = 24 * 60 * 60 * 1000;
-        const isOlderThanADay = (now - notifDate) > oneDayInMs;
 
-        return !isRead || !isOlderThanADay;
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+
+        return !isRead;
         
     })
     .sort((a, b) => {
