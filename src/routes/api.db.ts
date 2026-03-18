@@ -107,7 +107,7 @@ router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) =
 
     res.json({
         ...db_res,
-        notes: db_res.notes.map((note: Note) => { return { ...note, content: "" } })
+        notes: db_res.notes
     });
 
     // identify gost notes
