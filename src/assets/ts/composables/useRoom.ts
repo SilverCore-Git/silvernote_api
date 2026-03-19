@@ -41,7 +41,11 @@ async function useRoom (roomId: string)
     const ydoc = new Y.Doc();
     const awareness = new awarenessProtocol.Awareness(ydoc);
 
-    if (!note) throw new Error("Note not found");
+    if (!note)
+    {
+      console.error(`[Room ${roomId}] Erreur : Note introuvable en DB`);
+      return { room: undefined, checkAuth: () => false, save: async () => {}, leave: async () => {} };
+    };
 
     room = {
 
@@ -90,14 +94,39 @@ async function useRoom (roomId: string)
       } 
       catch (err) 
       {
-          throw new Error(`[Room ${roomId}] Migration failed : ${err}`);
+          console.error(`[Room ${roomId}] Migration failed : ${err}`);
       }
 
     }
     else
     {
-      throw new Error(`Invalid content type : ${JSON.stringify(room.note, null, 2)}`);
+      console.error(`Invalid content type : ${JSON.stringify(room.note, null, 2)}`);
     }
+
+    const saveInternal = async () => {
+      
+      const currentRoom = rooms.get(roomId);
+      if (!currentRoom) return; 
+
+      try {
+
+        const update = Y.encodeStateAsUpdate(currentRoom.ydoc);
+
+        currentRoom.note.ydoc_content = Buffer.from(update);
+        currentRoom.note.updated_at = Date.now();
+        await notes.updateNote(currentRoom.note);
+
+        console.log(`[Room ${currentRoom.id}] Auto-saved`);
+        
+      }
+      catch (error) 
+      {
+        console.error("Erreur sauvegarde auto:", error);
+      }
+
+    };
+
+    room.saveInterval = setInterval(saveInternal, 10000);
 
     rooms.set(roomId, room);
 
@@ -142,17 +171,24 @@ async function useRoom (roomId: string)
 
   }
 
-  if (!room.saveInterval) room.saveInterval = setInterval(save, 10000);
-
   const leave = async () => {
-  
-    clearInterval(room.saveInterval);
+    
+    const roomToCleanup = rooms.get(roomId);
+    if (!roomToCleanup) return;
+
+    console.log(`[Room ${roomId}] Cleaning up...`);
+    
+    if (roomToCleanup.saveInterval) 
+    {
+      clearInterval(roomToCleanup.saveInterval);
+      roomToCleanup.saveInterval = undefined; 
+    }
+
     await save();
 
-    room.awareness.destroy();
-    room.ydoc.destroy();
+    roomToCleanup.awareness.destroy();
+    roomToCleanup.ydoc.destroy();
     rooms.delete(roomId);
-
 
   };
 

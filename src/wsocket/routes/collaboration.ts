@@ -13,6 +13,12 @@ async function useRoomMiddleware
     const { room, save, checkAuth, leave } = await useRoom(roomId);
     const isAuthorized = checkAuth({ userId, socket });
 
+    if (!room)
+    {
+        socket.emit("error", { message: "Room not found" });
+        return { room: undefined, isAuthorized: false, checkAuth, save, leave, userId };
+    }
+
     return {
         room,
         save,
@@ -33,6 +39,7 @@ export default (io: Server, socket: Socket) => {
     const userId = socket.data.userId;
         
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     //if (!isAuthorized) return;
 
     socket.join('room:' + roomId);
@@ -67,6 +74,7 @@ export default (io: Server, socket: Socket) => {
 
     if (!roomId) return;
     const { room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
 
     socket.emit("initial-state", {
         note: room.note,
@@ -79,6 +87,7 @@ export default (io: Server, socket: Socket) => {
   socket.on("y-update", async ({ roomId, update }: { roomId: string, update: Uint8Array | number[] }) => {
     
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     if (!isAuthorized) return;
 
     try {
@@ -99,6 +108,7 @@ export default (io: Server, socket: Socket) => {
   socket.on('title-update', async ({ roomId, update }: { roomId: string, update: string }) => {
     
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     if (!isAuthorized) return;
 
     try {
@@ -117,6 +127,7 @@ export default (io: Server, socket: Socket) => {
   socket.on('icon-update', async ({ roomId, update }: { roomId: string, update: string }) => {
     
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     if (!isAuthorized) return;
 
     try {
@@ -135,6 +146,7 @@ export default (io: Server, socket: Socket) => {
   socket.on("awareness-update", async ({ roomId, update }: { roomId: string, update: Uint8Array | number[] }) => {
     
     const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     if (!isAuthorized) return;
 
     try {
@@ -215,6 +227,7 @@ export default (io: Server, socket: Socket) => {
   socket.on('save-room', async ({ room: roomId }: { room: string }) => {
 
     const { save, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
     await save();
     socket.emit('note:update', room.note);
 
@@ -223,6 +236,7 @@ export default (io: Server, socket: Socket) => {
   socket.on('leave-room', async ({ room: roomId }: { room: string }) => {
 
     const { leave, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
 
     await leave();
     socket.leave('room:' + roomId);
