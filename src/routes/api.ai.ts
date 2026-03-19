@@ -10,8 +10,11 @@ import db from '../assets/ts/database.js';
 import { getMCPService } from '../mcp.js';
 import send_to_chatgpt from './api.ai/send_to_chatgpt.js';
 import { Chat } from './api.ai/types.js';
+import { OpenAI } from 'openai';
+
 
 const router = Router();
+const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 
 let chats: any[] = []; //Chat[] | GeminiChat[]
@@ -107,6 +110,29 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
     {
         //send_to_gemini(req, res, chats);
     }
+
+});
+
+
+router.post('/send_message', verify_auth, async (req: Request, res: Response) => {
+    
+    const { message } = req.body;
+    
+    const response = await AIclient.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: 'You are a helpful assistant.'
+            },
+            {
+                role: 'user',
+                content: message
+            }
+        ]
+    });
+
+    res.json({ success: true, response: response.choices[0].message });
 
 });
 
