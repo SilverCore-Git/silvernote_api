@@ -116,10 +116,11 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
 
 router.post('/send_message', verify_auth, async (req: Request, res: Response) => {
     
+    const model = req.query?.model as string;
     const { message } = req.body;
     
     const response = await AIclient.chat.completions.create({
-        model: 'gpt-4o',
+        model: model || 'gpt-4o',
         messages: [
             {
                 role: 'system',
