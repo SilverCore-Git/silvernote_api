@@ -3,7 +3,7 @@ import type { Note } from "./types.js";
 import { randomUUID } from "crypto";
 import { dbAgent } from './db/userDB.js';
 import 'dotenv/config';
-import { decrypt, encrypt } from './utils/scrypto/scrypto.js';
+import { decrypt, decryptBuffer, encrypt, encryptBuffer } from './utils/scrypto/scrypto.js';
 
 const CRYPTED_PATTERN = /^[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9]+$/i;
 
@@ -66,7 +66,7 @@ class Notes {
         }
     }
 
-    private fullyDecryptContent(content: string, userId: string): string {
+    private fullyDecrypt(content: string, userId: string): string {
         let current = content;
 
         while (looksEncrypted(current)) 
@@ -82,20 +82,53 @@ class Notes {
         return current;
     }
 
-    private fullyDecryptNote(note: Note): Note {
-        if (!note?.content) return note;
+    private fullyDecryptNote(note: Note): Note 
+    {
 
-        if (looksEncrypted(note.content)) 
+        if (note.content_type == 'ydoc/crypted') 
         {
-            const decrypted = this.fullyDecryptContent(note.content, note.user_id);
+
+            if (looksEncrypted(note.content)) 
+            {
+                note.ydoc_content = decryptBuffer(note.content, note.user_id);
+            }
+
+            note.icon = decrypt(note.icon || '', note.user_id);
+            note.title = decrypt(note.title, note.user_id);
+
+            note.content_type = 'ydoc';
+
+        }
+        else if (note.content_type == 'text/html/crypted') 
+        {
+
+            const decrypted = this.fullyDecrypt(note.content, note.user_id);
+
+            note.icon = looksEncrypted(note.icon) ? this.fullyDecrypt(note.icon || '', note.user_id) : note.icon;
+            note.title = looksEncrypted(note.title) ? this.fullyDecrypt(note.title, note.user_id) : note.title;
+
             return {
                 ...note,
                 content: decrypted,
                 content_type: "text/html"
             };
+
+        }
+        else if (note.content_type == undefined)
+        {
+            if (note.content && looksEncrypted(note.content))
+            {
+                note.content = this.fullyDecrypt(note.content, note.user_id);
+                note.content_type = "text/html";
+            }
+            else
+            {
+                note.content_type = "text/html";
+            }
         }
 
         return note;
+
     }
 
 
@@ -110,7 +143,19 @@ class Notes {
 
         const noteToStore = { ...note };
 
-        if (noteToStore.content) {
+        if (noteToStore.content_type == 'ydoc')
+        {
+
+            noteToStore.content = encryptBuffer(noteToStore?.ydoc_content as Buffer || Buffer.from(''), note.user_id);
+            noteToStore.ydoc_content = Buffer.from('');
+            noteToStore.content_type = "ydoc/crypted";
+
+            noteToStore.title = encrypt(noteToStore.title || '', note.user_id);
+            noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
+
+        }
+        else if (noteToStore.content) 
+        {
             noteToStore.content = encrypt(noteToStore.content, note.user_id);
             noteToStore.content_type = "text/html/crypted";
         }
@@ -139,7 +184,7 @@ class Notes {
 
         const res = await this.fetch(`/user/justID/id/${uuid}`);
         if (!res?.notes?.length) {
-            return { error: true, message: "Note introuvable" };
+            return { error: true, note: undefined, message: "Note introuvable" };
         }
 
         const note = this.fullyDecryptNote(res.notes[0]);
@@ -189,7 +234,8 @@ class Notes {
     }
 
 
-    public async updateNote(note: Note) {
+    public async updateNote(note: Note, params?: { noContent: boolean }) 
+    {
 
         if (!note.uuid || !note.user_id) {
             return { error: true, message: "uuid et user_id requis" };
@@ -197,9 +243,37 @@ class Notes {
 
         const noteToStore = { ...note };
 
-        if (noteToStore.content) {
-            noteToStore.content = encrypt(noteToStore.content, note.user_id);
-            noteToStore.content_type = "text/html/crypted";
+        if (noteToStore.content_type == 'ydoc')
+        {
+
+            if (params?.noContent && params?.noContent == true)
+            {
+                const oldNote = (await this.getNoteByUUID(note.uuid, note.user_id)).note;
+                if (!oldNote) return { error: true, message: "Note introuvable" };
+                noteToStore.content = encryptBuffer(oldNote.ydoc_content as Buffer, note.user_id);
+                noteToStore.ydoc_content = Buffer.from('');
+                noteToStore.content_type = "ydoc/crypted";
+            }
+            else 
+            {
+                noteToStore.content = encryptBuffer(noteToStore.ydoc_content as Buffer, note.user_id);
+                noteToStore.ydoc_content = Buffer.from('');
+                noteToStore.content_type = "ydoc/crypted";
+            }
+
+            noteToStore.title = encrypt(noteToStore.title, note.user_id);
+            noteToStore.icon = encrypt(noteToStore.icon || '', note.user_id);
+
+        }
+        else
+        {
+
+            if (noteToStore.content) 
+            {
+                noteToStore.content = encrypt(noteToStore.content, note.user_id);
+                noteToStore.content_type = "text/html/crypted";
+            }
+
         }
 
         const res = await this.fetch('/update', {
@@ -216,6 +290,7 @@ class Notes {
         }
 
         return { error: true, message: "Réponse inattendue" };
+
     }
 
     public async clearUserNotes(user_id: string) {

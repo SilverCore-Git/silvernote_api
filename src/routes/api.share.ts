@@ -3,6 +3,7 @@ import type { Note } from '../assets/ts/types.js';
 import notes from '../assets/ts/notes.js';
 import Share from '../assets/ts/db/share/index.js';
 import { getAuth } from '@clerk/express';
+import { getUser } from '../assets/ts/utils/getUser.js';
 
 
 const router = Router();
@@ -11,23 +12,29 @@ const router = Router();
 router.get('/:uuid', async (req, res) => {
 
     const { uuid } = req.params;
-    const passwd = req.query.passwd;
+    const passwd = req.query?.passwd || '';
     const visitor_userid = getAuth(req).userId;
     if (!visitor_userid) return;
 
     const TheShare = await Share.get(uuid);
 
-    if (TheShare) {
+    if (TheShare)
+    {
 
         // verify banned
-        if (TheShare.banned.includes(visitor_userid)) {
-            res.json({ success: false, banned: true });
+        if (TheShare.banned.includes(visitor_userid)) 
+        {
+            res.status(403).json({ success: false, banned: true });
             return;
         }
 
         // verify passwd
-        if (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string)) {
-            res.json({ success: false, need: 'passwd' });
+        if (
+            (TheShare.params.passwd && !await Share.verifyPasswd(uuid, passwd as string))
+            && TheShare.owner_id !== visitor_userid
+        ) 
+        {
+            res.status(403).json({ success: false, need: 'passwd' });
             return;
         }
 
@@ -38,9 +45,10 @@ router.get('/:uuid', async (req, res) => {
         const now = Date.now();
         const isExpired: boolean = now - createdTime > TheShare.params.age;
 
-        if (TheShare.params.age !== -1 && isExpired) {
+        if (TheShare.params.age !== -1 && isExpired) 
+        {
             Share.delete(uuid);
-            res.json({ expired: isExpired });
+            res.status(403).json({ expired: isExpired });
             return;
         }
 
@@ -51,14 +59,24 @@ router.get('/:uuid', async (req, res) => {
             editable: TheShare.params.editable, 
             note: note.note, 
             user_id: TheShare.owner_id,
-            visitor: TheShare.visitor
+            owner_id: TheShare.owner_id,
+            visitor: await Promise.all(
+                [ ...TheShare.visitor, TheShare.owner_id ].map(async (id) => { 
+                    return { 
+                        ...(await getUser(id)), 
+                        isMe: id === visitor_userid, 
+                        type: TheShare.owner_id === id ? 'owner' : 'visitor'
+                    }; 
+                })
+            ),
         });
         return;
 
     }
 
-    else {
-        res.json({ error: true, message: 'Partage non trouvée.' })
+    else 
+    {
+        res.status(404).json({ error: true, message: 'Partage non trouvée.' })
     }
 
 })
@@ -70,7 +88,7 @@ router.get('/:uuid/info', async (req, res) => {
     const _share = await Share.get(uuid);
 
     if (!_share) {
-        res.json({ success: false, error: true, message: 'Partage non trouvée.' });
+        res.status(404).json({ success: false, error: true, message: 'Partage non trouvée.' });
         return;
     }
 
@@ -173,7 +191,7 @@ router.post('/:uuid/ban', async (req, res) => {
 
 router.post('/:uuid/update', async (req, res) => {
 
-    const { share } = req.body;
+    const share = req.body.share;
     const uuid = req.params.uuid;
 
 
@@ -184,8 +202,8 @@ router.post('/:uuid/update', async (req, res) => {
         if (TheShare) 
         {
 
-            const currentParams = TheShare.params || {};
-            const newParams = share.params || {};
+            const currentParams = TheShare?.params || {};
+            const newParams = share?.params || {};
 
             const updatedShare = {
                 ...TheShare,

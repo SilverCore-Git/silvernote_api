@@ -1,159 +1,169 @@
-import { Server, Socket } from "socket.io";
-import notes from "../../assets/ts/notes.js";
-import { Note } from "../../assets/ts/types.js";
+import type { Server, Socket } from "socket.io";
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import Share from "../../assets/ts/db/share/Share.js";
+import useRoom from "../../assets/ts/composables/useRoom.js";
+import { clerkClient } from "@clerk/express";
 
 
+async function useRoomMiddleware
+(socket: Socket, roomId: string)
+{
 
-const save_note = async (note: Note): Promise<void> => {
-  await notes.updateNote({
-    ...note,
-    updated_at: new Date().getTime()
-  });
+    const userId = socket.data.userId;
+    const { room, save, checkAuth, leave } = await useRoom(roomId);
+    const isAuthorized = checkAuth({ userId, socket });
+
+    if (!room)
+    {
+        socket.emit("error", { message: "Room not found" });
+        return { room: undefined, isAuthorized: false, checkAuth, save, leave, userId };
+    }
+
+    return {
+        room,
+        save,
+        checkAuth,
+        isAuthorized,
+        userId,
+        leave
+    }
+
 }
-
-
-const get_note = async (uuid: string): Promise<Note | undefined> => {
-  const res = await notes.getNoteByUUIDNoUserID(uuid);
-  if (res.note) return res.note;
-}
-
-
-const docs = new Map<string, { 
-  ydoc: Y.Doc, 
-  awareness: awarenessProtocol.Awareness,
-  saveInterval?: NodeJS.Timeout,
-  title: string,
-  icon: string
-}>();
-
 
 
 export default (io: Server, socket: Socket) => {
 
-  let currentRoom: string | null = null;
+  socket.on("join-room", async ({ room: roomId }: { room: string }) => {
 
-  socket.on("join-room", async ({ room, userId }: { room: string, userId: string }) => {
-
+    if (!roomId) return;
+    const userId = socket.data.userId;
+        
+    const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
     if (!room) return;
-    
-    currentRoom = room; // Stocker la room
-    socket.join(room);
-    
-    let docData = docs.get(room);
-    const share = await Share.get(room);
+    //if (!isAuthorized) return;
 
-    if (!docData)
-    {
+    socket.join('room:' + roomId);
 
-      const ydoc = new Y.Doc();
-      const awareness = new awarenessProtocol.Awareness(ydoc);
-      const note = await get_note(room);
-      
-      const title = note?.title || "";
-      const icon = note?.icon || "";
 
-      const saveInterval = setInterval(async () => {
-        clearInterval(saveInterval);
-      }, 10000);
-
-      docs.set(room, { ydoc, awareness, saveInterval, title, icon });
-      docData = { ydoc, awareness, saveInterval, title, icon };
-
-    }
-
-    const { ydoc, awareness } = docData;
-
-    const initialState = Y.encodeStateAsUpdate(ydoc);
-    const stateArray = Array.from(initialState);
-    socket.emit("sync", stateArray);
-    
-    socket.emit("title-update", docData.title);
-    socket.emit("icon-update", docData.icon);
+    socket.emit("initial-state", {
+        note: room.note,
+        share: room.share,
+        ydocState: Y.encodeStateAsUpdate(room.ydoc)
+    });
     
     if (userId)
     {
-      if (share && userId == share.owner_id) return;
-      socket.emit('new_user', userId);
+
+      if (room.share && userId == room.share.owner_id) return;
+      const user = await clerkClient.users.getUser(userId);
+
+      socket.to('room:'+roomId).emit('user-join', { user: { 
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullname: user.fullName,
+        imageUrl: user.imageUrl,
+      } });
+
     }
 
   });
 
-  socket.on("y-update", async (update: Uint8Array | number[]) => {
+  socket.on('get-initial-state', async ({ roomId }: { roomId: string }) => {
+
+    if (!roomId) return;
+    const { room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+
+    socket.emit("initial-state", {
+        note: room.note,
+        share: room.share,
+        ydocState: Y.encodeStateAsUpdate(room.ydoc)
+    });
+  
+  });
+
+  socket.on("y-update", async ({ roomId, update }: { roomId: string, update: Uint8Array | number[] }) => {
     
-    if (!currentRoom) return;
-    const docData = docs.get(currentRoom);
-    if (!docData) return;
+    const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+    if (!isAuthorized) return;
 
     try {
-      const uint8Array = update instanceof Uint8Array 
-        ? update 
-        : new Uint8Array(update);
 
-      Y.applyUpdate(docData.ydoc, uint8Array);
-      socket.to(currentRoom).emit("y-update", Array.from(uint8Array));
+      const uint8Array = Buffer.isBuffer(update) ? update : new Uint8Array(update);
 
-    } catch (error) {
+      Y.applyUpdate(room.ydoc, uint8Array);
+      socket.to('room:'+roomId).emit("y-update", { roomId, update: uint8Array });
+
+    } 
+    catch (error) 
+    {
+      console.error("Error applying update : ", error);
+    }
+
+  });
+
+  socket.on('title-update', async ({ roomId, update }: { roomId: string, update: string }) => {
+    
+    const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+    if (!isAuthorized) return;
+
+    try {
+
+      room.note.title = update;
+      socket.to('room:'+roomId).emit("title-update", { roomId, update });
+
+    } 
+    catch (error) 
+    {
+      console.error("Error applying update : ", error);
+    }
+
+  });
+
+  socket.on('icon-update', async ({ roomId, update }: { roomId: string, update: string }) => {
+    
+    const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+    if (!isAuthorized) return;
+
+    try {
+
+      room.note.icon = update;
+      socket.to('room:'+roomId).emit("icon-update", { roomId, update });
+
+    } 
+    catch (error) 
+    {
       console.error("Error applying update:", error);
     }
+
   });
 
-  socket.on('title-update', async (update: string) => {
+  socket.on("awareness-update", async ({ roomId, update }: { roomId: string, update: Uint8Array | number[] }) => {
     
-    if (!currentRoom) return;
-    const docData = docs.get(currentRoom);
+    const { isAuthorized, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+    if (!isAuthorized) return;
 
     try {
-      if (docData) {
-        docData.title = update;
-        socket.to(currentRoom).emit("title-update", update);
-      }
-    } catch (error) {
-      console.error("Error applying update:", error);
-    }
-  });
 
-  socket.on('icon-update', async (update: string) => {
-    
-    if (!currentRoom) return;
-    const docData = docs.get(currentRoom);
-
-    try {
-      if (docData) {
-        docData.icon = update;
-        socket.to(currentRoom).emit("icon-update", update);
-        const note: Note | undefined = await get_note(currentRoom);
-        if (note) {
-          await save_note({
-            ...note,
-            icon: update
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error applying update:", error);
-    }
-  });
-
-  socket.on("awareness-update", (update: Uint8Array | number[]) => {
-    
-    if (!currentRoom) return;
-    const docData = docs.get(currentRoom);
-    if (!docData) return;
-
-    try {
       const uint8Array = update instanceof Uint8Array 
         ? update 
         : new Uint8Array(update);
       
-      awarenessProtocol.applyAwarenessUpdate(docData.awareness, uint8Array, socket);
-      socket.to(currentRoom).emit("awareness-update", Array.from(uint8Array));
+      awarenessProtocol.applyAwarenessUpdate(room.awareness, uint8Array, socket);
+      socket.to('room:'+roomId).emit("awareness-update", { roomId, update: Array.from(uint8Array) });
 
-    } catch (error) {
+    } 
+    catch (error) 
+    {
       console.error("Error applying awareness update:", error);
     }
+
   });
 
   // MCP tools emits
@@ -214,41 +224,43 @@ export default (io: Server, socket: Socket) => {
     }
   );
 
-  socket.on('leave-room', ({ room }: { room: string }) => {
-    socket.leave(room);
-    if (currentRoom === room) {
-      currentRoom = null;
-    }
+  socket.on('save-room', async ({ room: roomId }: { room: string }) => {
+
+    const { save, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+    await save();
+    socket.emit('note:update', room.note);
+
+  })
+
+  socket.on('leave-room', async ({ room: roomId }: { room: string }) => {
+
+    const { leave, room } = await useRoomMiddleware(socket, roomId);
+    if (!room) return;
+
+    await leave();
+    socket.leave('room:' + roomId);
+    io.to(`room:${roomId}`).emit('note:update', room.note);
+
   });
 
-  socket.on("disconnect", async () => {
 
-    if (!currentRoom) return;
+  socket.on("disconnecting", async () => {
+    
+    for (const roomName of socket.rooms) 
+    {
 
-    const docData = docs.get(currentRoom);
-    if (!docData) return;
+      if (roomName.startsWith('room:'))
+      {
 
-    const { awareness, saveInterval } = docData;
-    
-    const note: Note | undefined = await get_note(currentRoom);
-    if (note) {
-      await save_note({
-        ...note,
-        title: docData.title,
-        icon: docData.icon
-      });
-    }
-    
-    awareness.setLocalState(null);
-    
-    if (io.sockets.adapter.rooms.get(currentRoom)?.size === 0) {
-      if (saveInterval) {
-        clearInterval(saveInterval);
+        const roomId = roomName.replace('room:', '');
+        const { leave } = await useRoom(roomId);
+        
+        setImmediate(() => leave());
+        
       }
-      docs.delete(currentRoom);
+
     }
-    
-    console.log("Client disconnected:", socket.id);
   });
 
 };

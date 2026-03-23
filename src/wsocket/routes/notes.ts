@@ -37,7 +37,7 @@ export default (io: Server, socket: Socket) => {
             return;
         }
 
-        const res = await notes.updateNote(note);
+        const res = await notes.updateNote(note, { noContent: true });
 
         if (res.error)
         {

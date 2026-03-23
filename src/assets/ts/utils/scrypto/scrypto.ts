@@ -79,8 +79,59 @@ function decrypt(data: string, userId: string)
 
 }
 
+
+function encryptBuffer(buffer: Buffer, userId: string): string 
+{
+
+    const userKey = getUserKey(userId); // 32 oct
+    
+    // 12oct IV
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(ALGORITHM, userKey, iv);
+
+    const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+
+    const authTag = cipher.getAuthTag();
+
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+
+}
+
+function decryptBuffer(encryptedString: string, userId: string): Buffer 
+{
+
+    const [ivHex, authTagHex, encryptedHex] = encryptedString.split(':');
+    
+    if (!ivHex || !authTagHex || !encryptedHex) 
+    {
+        throw new Error("Format de données chiffrées invalide.");
+    }
+
+    const userKey = getUserKey(userId);
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const encrypted = Buffer.from(encryptedHex, 'hex');
+
+    const decipher = crypto.createDecipheriv(ALGORITHM, userKey, iv);
+    
+    decipher.setAuthTag(authTag);
+
+    try {
+        const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+        return decrypted;
+    } 
+    catch (error) 
+    {
+        throw new Error("Échec du déchiffrement : données corrompues ou clé invalide.");
+    }
+
+}
+
+
 export {
     encrypt,
     decrypt,
-    getUserFingerprint
+    getUserFingerprint,
+    encryptBuffer,
+    decryptBuffer
 };
