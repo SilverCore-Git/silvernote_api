@@ -2,16 +2,18 @@ import { Router, Request, Response } from 'express';
 import Notifications from '../assets/ts/db/notifications.js';
 import News from '../assets/ts/news.js';
 import database from '../assets/ts/database.js';
+import { createClerkClient, getAuth } from '@clerk/express';
 
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
 
-    const client_userId = req.cookies.user_id;
+    const client_userId = getAuth(req).userId;
 
     if (!client_userId) {
-        res.status(401).json({ error: true, message: 'UserId cookie not set' });
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
         return;
     }
 
@@ -44,10 +46,10 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/mark-read/:id', async (req: Request, res: Response) => {
 
-    const client_userId = req.cookies.user_id;
+    const client_userId = getAuth(req).userId;
 
     if (!client_userId) {
-        res.status(401).json({ error: true, message: 'UserId cookie not set' });
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
         return;
     }
 
@@ -63,15 +65,69 @@ router.post('/mark-read/:id', async (req: Request, res: Response) => {
 });
 
 
+router.post('/admin/notif',  async (req: Request, res: Response) => {
+
+    const user = getAuth(req);
+    const notif = req.body;
+
+    if (!user.userId) {
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
+        return;
+    }
+
+    const clerkUser = await clerk.users.getUser(user.userId);
+    const unsafeMetadata = clerkUser.unsafeMetadata;
+
+    if (( unsafeMetadata?.perm as string[] ).includes('notifications'))
+    {
+
+        const _notif = await Notifications.add(notif);
+        res.json({ success: true, notif: _notif });
+        return;
+
+    }
+    
+    res.status(403).json({ error: true, message: 'unauthorised' })
+
+})
+
+
+router.delete('/admin/notif/:id',  async (req: Request, res: Response) => {
+
+    const user = getAuth(req);
+    const notifId = req.params.id;
+
+    if (!user.userId) {
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
+        return;
+    }
+
+    const clerkUser = await clerk.users.getUser(user.userId);
+    const unsafeMetadata = clerkUser.unsafeMetadata;
+
+    if (( unsafeMetadata?.perm as string[] ).includes('notifications'))
+    {
+
+        const _notif = await Notifications.delete(notifId);
+        res.json({ success: true });
+        return;
+
+    }
+    
+    res.status(403).json({ error: true, message: 'unauthorised' })
+
+})
+
+
 // android notifications
 
 router.post('/android/register', async (req: Request, res: Response) => {
 
-    const client_userId = req.cookies.user_id;
+    const client_userId = getAuth(req).userId;
     const { fcm_token } = req.body;
 
     if (!client_userId) {
-        res.status(401).json({ error: true, message: 'UserId cookie not set' });
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
         return;
     }
 
@@ -88,11 +144,11 @@ router.post('/android/register', async (req: Request, res: Response) => {
 
 router.post('/android/unregister', async (req: Request, res: Response) => {
 
-    const client_userId = req.cookies.user_id;
+    const client_userId = getAuth(req).userId;
     const { fcm_token } = req.body;
 
     if (!client_userId) {
-        res.status(401).json({ error: true, message: 'UserId cookie not set' });
+        res.status(401).json({ error: true, message: 'UserId is undefined' });
         return;
     }
 

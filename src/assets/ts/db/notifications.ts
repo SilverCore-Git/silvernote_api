@@ -112,6 +112,21 @@ export class NotificationManager
     }
 
     /**
+     * delete a notification
+     */
+    public async delete(notifId: string): Promise<void>
+    {
+
+        const all = await this.getAll();
+
+        all.filter(notif => notif.id !== notifId);
+
+        await this.save(all);
+        return;
+
+    }
+
+    /**
      * Mark a notification as read
      */
     public async markAsRead(id: string, user_id: string): Promise<void>
