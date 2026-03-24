@@ -3,6 +3,8 @@ import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import useRoom from "../../assets/ts/composables/useRoom.js";
 import { clerkClient } from "@clerk/express";
+import { triggerSave } from "../utils/saveRoom.js";
+import { disconnectQueue } from "../utils/disconnectQueue.js";
 
 
 async function useRoomMiddleware
@@ -115,6 +117,9 @@ export default (io: Server, socket: Socket) => {
 
       room.note.title = update;
       socket.to('room:'+roomId).emit("title-update", { roomId, update });
+      
+      // Immediate save to prevent data loss
+      await triggerSave(roomId, { immediate: true });
 
     } 
     catch (error) 
@@ -134,6 +139,9 @@ export default (io: Server, socket: Socket) => {
 
       room.note.icon = update;
       socket.to('room:'+roomId).emit("icon-update", { roomId, update });
+      
+      // Immediate save to prevent data loss
+      await triggerSave(roomId, { immediate: true });
 
     } 
     catch (error) 
@@ -181,6 +189,9 @@ export default (io: Server, socket: Socket) => {
 
       try {
         io.to(data.room).emit('ai-content-update', data);
+        
+        // Trigger save for AI-generated content
+        await triggerSave(data.room, { immediate: true });
       } catch (error) {
         console.error("Error handling AI command:", error);
       }
@@ -199,6 +210,9 @@ export default (io: Server, socket: Socket) => {
 
       try {
         io.to(data.room).emit('ai-title-update', data);
+        
+        // Trigger save for AI-generated title
+        await triggerSave(data.room, { immediate: true });
       } catch (error) {
         console.error("Error handling AI command:", error);
       }
@@ -217,6 +231,9 @@ export default (io: Server, socket: Socket) => {
 
       try {
         io.to(data.room).emit('ai-icon-update', data);
+        
+        // Trigger save for AI-generated icon
+        await triggerSave(data.room, { immediate: true });
       } catch (error) {
         console.error("Error handling AI command:", error);
       }
@@ -256,11 +273,18 @@ export default (io: Server, socket: Socket) => {
         const roomId = roomName.replace('room:', '');
         const { leave } = await useRoom(roomId);
         
-        setImmediate(() => leave());
+        // Add to async cleanup queue instead of setImmediate
+        // This ensures saves complete before server shutdown
+        await disconnectQueue.addTask(async () => {
+          await leave();
+        });
         
       }
 
     }
+    
+    // Wait for all cleanup tasks to complete
+    await disconnectQueue.drain();
   });
 
 };
