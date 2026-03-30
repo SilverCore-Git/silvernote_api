@@ -34,7 +34,8 @@ class Database {
 
     private async get ( db_type: "user" | "sessions" ): Promise<any> {
 
-        if (db_type == 'user') {
+        if (db_type == 'user') 
+        {
 
             const data = await fsp.readFile(this.db_users);
             const data_parse: User[] = JSON.parse(`${data}`);
@@ -42,7 +43,8 @@ class Database {
 
         }
 
-        if (db_type == 'sessions') {
+        if (db_type == 'sessions') 
+        {
 
             const data = await fsp.readFile(this.db_sessions);
             const data_parse: User[] = JSON.parse(`${data}`);

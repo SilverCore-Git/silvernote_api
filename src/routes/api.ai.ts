@@ -11,6 +11,7 @@ import { getMCPService } from '../mcp.js';
 import send_to_chatgpt from './api.ai/send_to_chatgpt.js';
 import { Chat } from './api.ai/types.js';
 import { OpenAI } from 'openai';
+import { getAuth } from '@clerk/express';
 
 
 const router = Router();
@@ -19,32 +20,17 @@ const AIclient = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 let chats: any[] = []; //Chat[] | GeminiChat[]
 
-function verify_auth(req: Request, res: Response, next: NextFunction) {
-    next();
-}
+router.post('/create', async (req: Request, res: Response) => {
 
-
-router.post('/create', verify_auth, async (req: Request, res: Response) => {
-
-    const { user } = req.body;
+    const user_id = String(getAuth(req).userId);
 
     try {
-
-        if (!await db.exist_user(user.id)) {
-            res.status(400).json({ 
-                error: true, 
-                message: 'Utilisateur introuvable.', 
-                exist_user: await db.exist_user(user.id), 
-                user_id: user.id
-            });
-            return;
-        }
 
         // S'assurer que MCP est connecté
         const mcpService = getMCPService();
         await mcpService.ensureConnected();
 
-        const existingSession = chats.find(chat => chat.userID === user.id);
+        const existingSession = chats.find(chat => chat.userID === user_id);
 
         if (existingSession)
         {
@@ -53,11 +39,12 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
                 session: existingSession,
                 mcpConnected: mcpService.isConnected()
             });
+            return;
         }
 
         const session: Chat = { 
             uuid: randomUUID(),
-            userID: user.id,
+            userID: user_id,
             messages: [
                 { 
                     role: "system", 
@@ -76,16 +63,17 @@ router.post('/create', verify_auth, async (req: Request, res: Response) => {
         
     } catch (err: any) {
         res.status(500).json({ error: true, message: err.message });
+        console.error('[AI CREATE SESS] : ', err)
     }
 
 });
 
-router.post('/close', verify_auth, async (req: Request, res: Response) => {
+router.post('/close', async (req: Request, res: Response) => {
     const { uuid } = req.body;
-    const userID = req.cookies.user_id;
+    const user_id = String(getAuth(req).userId);
 
     try {
-        if (!await db.get_user(userID)) {
+        if (!await db.get_user(user_id)) {
             res.status(400).json({ error: true, message: 'Utilisateur introuvable.' });
             return;
         }
@@ -98,7 +86,7 @@ router.post('/close', verify_auth, async (req: Request, res: Response) => {
     }
 });
 
-router.post('/send', verify_auth, async (req: Request, res: Response) => {
+router.post('/send', async (req: Request, res: Response) => {
     
     const model = req.query?.model as 'gpt' | 'gemini';
 
@@ -114,7 +102,7 @@ router.post('/send', verify_auth, async (req: Request, res: Response) => {
 });
 
 
-router.post('/send_message', verify_auth, async (req: Request, res: Response) => {
+router.post('/send_message', async (req: Request, res: Response) => {
     
     const model = req.query?.model as string;
     const { message } = req.body;
