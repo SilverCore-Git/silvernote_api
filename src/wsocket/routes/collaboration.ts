@@ -188,11 +188,22 @@ export default (io: Server, socket: Socket) => {
       if (!data.room) return;
 
       try {
+        
+        const { room } = await useRoomMiddleware({} as Socket, data.room);
+        if (room) 
+        {
+          const ytext = room.ydoc.getText('content');
+          ytext.insert(data.content.pos, data.content.html);
+          console.log(`[AI Update] Content inserted at pos ${data.content.pos}, ${data.content.html.length} chars`);
+        }
+        
         io.to(data.room).emit('ai-content-update', data);
         
-        // Trigger save for AI-generated content
         await triggerSave(data.room, { immediate: true });
-      } catch (error) {
+
+      } 
+      catch (error) 
+      {
         console.error("Error handling AI command:", error);
       }
 
@@ -209,10 +220,18 @@ export default (io: Server, socket: Socket) => {
       if (!data.room) return;
 
       try {
+        
+        const { room } = await useRoomMiddleware({} as Socket, data.room);
+        if (room) 
+        {
+          room.note.title = data.title;
+          console.log(`[AI Update] Title set to: ${data.title}`);
+        }
+        
         io.to(data.room).emit('ai-title-update', data);
         
-        // Trigger save for AI-generated title
         await triggerSave(data.room, { immediate: true });
+
       } catch (error) {
         console.error("Error handling AI command:", error);
       }
@@ -230,10 +249,18 @@ export default (io: Server, socket: Socket) => {
       if (!data.room) return;
 
       try {
+        
+        const { room } = await useRoomMiddleware({} as Socket, data.room);
+        if (room) 
+        {
+          room.note.icon = data.icon;
+          console.log(`[AI Update] Icon set to: ${data.icon}`);
+        }
+        
         io.to(data.room).emit('ai-icon-update', data);
         
-        // Trigger save for AI-generated icon
         await triggerSave(data.room, { immediate: true });
+        
       } catch (error) {
         console.error("Error handling AI command:", error);
       }

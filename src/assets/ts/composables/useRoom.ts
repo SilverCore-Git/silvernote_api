@@ -89,7 +89,16 @@ async function useRoom (roomId: string)
               content = '<p></p>'; 
           }
 
+          // BUG FIX: Apply HTML content to Yjs document
+          // Otherwise ydoc starts empty after migration
+          const ytext = ydoc.getText('content');
+          ytext.insert(0, content);
+          
+          // Encode the applied content to ydoc_content buffer
+          room.note.ydoc_content = Buffer.from(Y.encodeStateAsUpdate(ydoc));
           room.note.content_type = 'ydoc';
+
+          console.log(`[Room ${roomId}] HTML→Yjs migration completed, applied ${content.length} chars`);
 
       } 
       catch (err) 
