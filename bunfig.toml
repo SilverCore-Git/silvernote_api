@@ -1,0 +1,38 @@
+# Bun configuration for SilverNote API
+[install]
+# Use Bun's native resolver for faster installs
+auto = true
+
+# Cache directory
+cache_dir = ".bun-cache"
+
+[runtime]
+# Enable source maps for debugging
+generate_source_maps = true
+
+# Enable Bun's test runner (if you add tests)
+test = []
+
+# Configuration for Bun.serve
+[serve]
+# Enable HTTP/2 (if needed)
+# http2 = true
+
+# Enable automatic HTTPS with self-signed certs for development
+# auto_https = true
+
+# Configuration for TypeScript
+[typescript]
+# Enable TypeScript support
+enabled = true
+# Path to tsconfig.json
+tsconfig = "./tsconfig.json"
+
+# Bun build configuration
+[build]
+# Target runtime (default: bun)
+target = "bun"
+# Minify output
+minify = true
+# Source maps
+sourcemap = true
