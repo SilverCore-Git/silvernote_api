@@ -1,10 +1,46 @@
 import { Router, Request, Response } from 'express';
 import { clerkClient, getAuth } from "@clerk/express";
 import admin, { ServiceAccount } from 'firebase-admin';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 
-const filePath = join(process.cwd(), process.env.FIREBASE_ADMIN_SDK_PATH || '');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Try multiple paths for Firebase SDK (works with both Bun and Node.js)
+const getFirebaseKeyPath = (): string => {
+  const envPath = process.env.FIREBASE_ADMIN_SDK_PATH;
+  if (envPath) {
+    const fullPath = join(process.cwd(), envPath);
+    try {
+      readFileSync(fullPath, 'utf8');
+      return fullPath;
+    } catch {
+      // File not found at env path, try fallback
+    }
+  }
+  
+  // Fallback paths
+  const possiblePaths = [
+    join(__dirname, '../../private/silvernote-f5a5a-firebase-adminsdk-fbsvc-88c7536f72.json'),
+    join(process.cwd(), 'src/private/silvernote-f5a5a-firebase-adminsdk-fbsvc-88c7536f72.json'),
+    join(process.cwd(), 'dist/src/private/silvernote-f5a5a-firebase-adminsdk-fbsvc-88c7536f72.json'),
+  ];
+  
+  for (const path of possiblePaths) {
+    try {
+      readFileSync(path, 'utf8');
+      return path;
+    } catch {
+      // Continue to next path
+    }
+  }
+  
+  throw new Error('Firebase Admin SDK key file not found');
+};
+
+const filePath = getFirebaseKeyPath();
 const serviceAccount = JSON.parse(readFileSync(filePath, 'utf8'));
 
 admin.initializeApp({

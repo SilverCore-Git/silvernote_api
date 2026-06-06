@@ -11,7 +11,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import cors from 'cors';
 import { clerkMiddleware, requireAuth, verifyToken } from '@clerk/express';
-import { getMCPService } from './mcp.ts';
+import { getMCPService } from './mcp';
 import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,18 +21,18 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), '
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
 
 // Import routes
-import api from './routes/api.ts';
-import api_db from './routes/api.db.ts';
-import api_ai from './routes/api.ai.ts';
-import api_firebase from './routes/api.firebase.ts';
-import api_share from './routes/api.share.ts';
-import user from './routes/user.ts';
-import money from './routes/money.ts';
-import admin from './routes/admin.ts';
-import resources from './routes/resources.ts';
-import notifications from './routes/api.notifications.ts';
-import api_2048 from './routes/api.2048.ts';
-import wsRoutes from './wsocket/routes/index.ts';
+import api from './routes/api';
+import api_db from './routes/api.db';
+import api_ai from './routes/api.ai';
+import api_firebase from './routes/api.firebase';
+import api_share from './routes/api.share';
+import user from './routes/user';
+import money from './routes/money';
+import admin from './routes/admin';
+import resources from './routes/resources';
+import notifications from './routes/api.notifications';
+import api_2048 from './routes/api.2048';
+import wsRoutes from './wsocket/routes/index';
 
 // Create Express app
 const app = express();
