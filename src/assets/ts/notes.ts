@@ -165,7 +165,11 @@ class Notes {
             body: JSON.stringify({ note: noteToStore })
         });
 
-        return { success: !!res?._id, note };
+        if (!res?._id) {
+            return { error: true, message: "Échec de la création de la note" };
+        }
+
+        return { success: true, note };
     }
 
 

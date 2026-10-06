@@ -1,8 +1,32 @@
+# Dependencies
 /node_modules
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Build outputs
 /dist
-/dist
-/node_modules
-/dist
+
+# Bun cache
+.bun-cache
+
+# IDE
 .vscode/mcp.json
+
+# Private files
 /src/private
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Agent tooling
+.claude/

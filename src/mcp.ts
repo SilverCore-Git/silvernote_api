@@ -7,12 +7,23 @@ import {
 } from 'openai/resources/chat/completions';
 
 // Configuration MCP
+// Use .ts extension for Bun compatibility, tsx will handle compilation
+// Also handle path differences between Bun (src/) and Node.js (dist/src/)
+const getMCPServerPath = (): string => {
+  const envPath = process.env.MCP_SERVER_PATH;
+  if (envPath) {
+    // Replace dist/src with src for Bun compatibility
+    return envPath.replace(/^\.\/dist\/src\//, './src/').replace(/\.js$/, '.ts');
+  }
+  return './src/mcp-server/index.ts';
+};
+
 const MCP_CONFIG = {
     command: 'npx',
     args: [
         '-y',
         'tsx',
-        process.env.MCP_SERVER_PATH || './src/mcp-server/index.js'
+        getMCPServerPath()
     ]
 };
 
