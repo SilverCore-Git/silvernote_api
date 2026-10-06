@@ -19,7 +19,7 @@ export default (io: Server, socket: Socket) => {
 
         if (res.error)
         {
-            socket.emit('error', res.error);
+            socket.emit('note:create:error', { uuid: note.uuid, message: res.message || 'Erreur lors de la création de la note' });
             return;
         }
 
