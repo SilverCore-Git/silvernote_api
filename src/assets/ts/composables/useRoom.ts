@@ -4,7 +4,7 @@ import { Note } from "../types.js";
 import notes from "../notes.js";
 import Share from "../db/share/Share.js";
 import { type Share as ShareType } from "../db/share/ShareTypes.js";
-import { Socket } from "socket.io";
+import { Socket, Server } from "socket.io";
 import { decrypt } from "../utils/scrypto/scrypto.js";
 
 
@@ -18,15 +18,36 @@ export interface Room {
   // for shared notes
   share?: ShareType;
 
-  ydoc: Y.Doc; 
+  ydoc: Y.Doc;
   awareness: awarenessProtocol.Awareness;
 
   created_at: string;
+
+  // true when the HTML -> Yjs migration failed (e.g. decrypt() threw) :
+  // saving must be blocked while this is true, to avoid overwriting the
+  // original content with an empty Y.Doc.
+  migrationFailed: boolean;
 
 }
 
 
 const rooms = new Map<string, Room>();
+
+// Socket.io server instance, injected once from collaboration.ts so that
+// useRoom() can emit save acknowledgements ('note-persisted') even from the
+// autosave interval, which isn't tied to any particular socket.
+let ioInstance: Server | undefined;
+
+export function setIO (io: Server)
+{
+  ioInstance = io;
+}
+
+function notifyPersisted (roomId: string, ok: boolean, message?: string)
+{
+  if (!ioInstance) return;
+  ioInstance.to('room:' + roomId).emit('note-persisted', { roomId, ok, ...(message ? { message } : {}) });
+}
 
 async function useRoom (roomId: string)
 {
@@ -64,7 +85,9 @@ async function useRoom (roomId: string)
       ydoc,
       awareness,
 
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+
+      migrationFailed: false
 
     }
 
@@ -91,10 +114,11 @@ async function useRoom (roomId: string)
 
           room.note.content_type = 'ydoc';
 
-      } 
-      catch (err) 
+      }
+      catch (err)
       {
           console.error(`[Room ${roomId}] Migration failed : ${err}`);
+          room.migrationFailed = true;
       }
 
     }
@@ -106,22 +130,32 @@ async function useRoom (roomId: string)
     const saveInternal = async () => {
       
       const currentRoom = rooms.get(roomId);
-      if (!currentRoom) return; 
+      if (!currentRoom) return;
+
+      if (currentRoom.migrationFailed)
+      {
+        console.error(`[Room ${roomId}] Auto-save skipped : migration from HTML to Y.Doc failed earlier, refusing to overwrite the original content with an empty note.`);
+        notifyPersisted(roomId, false, "Migration failed, save aborted to avoid data loss");
+        return;
+      }
 
       try {
 
         const update = Y.encodeStateAsUpdate(currentRoom.ydoc);
 
         currentRoom.note.ydoc_content = Buffer.from(update);
+        currentRoom.note.content_type = 'ydoc';
         currentRoom.note.updated_at = Date.now();
         await notes.updateNote(currentRoom.note);
 
         console.log(`[Room ${currentRoom.id}] Auto-saved`);
-        
+        notifyPersisted(roomId, true);
+
       }
-      catch (error) 
+      catch (error)
       {
-        console.error("Erreur sauvegarde auto:", error);
+        console.error(`[Room ${roomId}] Erreur sauvegarde auto:`, error);
+        notifyPersisted(roomId, false, "Auto-save failed");
       }
 
     };
@@ -137,11 +171,18 @@ async function useRoom (roomId: string)
 
       if (!room) return;
 
+      if (room.migrationFailed)
+      {
+        console.error(`[Room ${roomId}] Save skipped : migration from HTML to Y.Doc failed earlier, refusing to overwrite the original content with an empty note.`);
+        notifyPersisted(roomId, false, "Migration failed, save aborted to avoid data loss");
+        return;
+      }
+
       try {
-        
+
           const update = Y.encodeStateAsUpdate(room.ydoc);
           const ydocBuffer = Buffer.from(update);
-          
+
           room.note.ydoc_content = ydocBuffer;
           room.note.content_type = 'ydoc';
           room.note.updated_at = Date.now();
@@ -149,13 +190,15 @@ async function useRoom (roomId: string)
           await Promise.all([
               notes.updateNote(room.note)
           ]);
-          
-          console.log(`[Room ${room.id}] Saved successfully`);
 
-      } 
-      catch (error) 
+          console.log(`[Room ${room.id}] Saved successfully`);
+          notifyPersisted(roomId, true);
+
+      }
+      catch (error)
       {
-          console.error("Erreur lors de la sauvegarde de la room : ", error);
+          console.error(`[Room ${roomId}] Erreur lors de la sauvegarde de la room : `, error);
+          notifyPersisted(roomId, false, "Save failed");
       }
 
   };
