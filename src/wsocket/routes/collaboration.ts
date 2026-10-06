@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import useRoom from "../../assets/ts/composables/useRoom.js";
+import useRoom, { setIO } from "../../assets/ts/composables/useRoom.js";
 import { clerkClient } from "@clerk/express";
 import { triggerSave } from "../utils/saveRoom.js";
 import { disconnectQueue } from "../utils/disconnectQueue.js";
@@ -34,6 +34,11 @@ async function useRoomMiddleware
 
 
 export default (io: Server, socket: Socket) => {
+
+  // Give useRoom() access to the Socket.io server instance so it can emit
+  // 'note-persisted' acknowledgements from the autosave interval, which is
+  // not tied to any particular socket.
+  setIO(io);
 
   socket.on("join-room", async ({ room: roomId }: { room: string }) => {
 
