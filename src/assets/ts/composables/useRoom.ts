@@ -33,6 +33,17 @@ export interface Room {
 
 const rooms = new Map<string, Room>();
 
+// In-flight room creations. Without this, concurrent calls for a missing room
+// (typically the burst of buffered y-updates flushed by a client on reconnect)
+// each load the note and build their own Y.Doc; the last rooms.set() wins and
+// the updates applied to the other docs are silently lost.
+const pendingRooms = new Map<string, Promise<Room | undefined>>();
+
+// Rooms whose final save is in progress (leave()). New arrivals wait for it and
+// reload from DB, instead of writing into a Y.Doc that is about to be destroyed
+// after its snapshot was already taken.
+const closingRooms = new Map<string, Promise<void>>();
+
 // Socket.io server instance, injected once from collaboration.ts so that
 // useRoom() can emit save acknowledgements ('note-persisted') even from the
 // autosave interval, which isn't tied to any particular socket.
@@ -49,13 +60,28 @@ function notifyPersisted (roomId: string, ok: boolean, message?: string)
   ioInstance.to('room:' + roomId).emit('note-persisted', { roomId, ok, ...(message ? { message } : {}) });
 }
 
-async function useRoom (roomId: string)
+async function getRoom (roomId: string): Promise<Room | undefined>
 {
 
-  let room: Room | undefined = rooms.get(roomId);
+  const closing = closingRooms.get(roomId);
+  if (closing) await closing;
 
-  if (!room)
+  const existing = rooms.get(roomId);
+  if (existing) return existing;
+
+  let pending = pendingRooms.get(roomId);
+  if (!pending)
   {
+    pending = loadRoom(roomId).finally(() => pendingRooms.delete(roomId));
+    pendingRooms.set(roomId, pending);
+  }
+
+  return pending;
+
+}
+
+async function loadRoom (roomId: string): Promise<Room | undefined>
+{
 
     const note = (await notes.getNoteByUUIDNoUserID(roomId)).note;
     let share: ShareType | undefined = await Share.get(roomId);
@@ -65,10 +91,10 @@ async function useRoom (roomId: string)
     if (!note)
     {
       console.error(`[Room ${roomId}] Erreur : Note introuvable en DB`);
-      return { room: undefined, checkAuth: () => false, save: async () => {}, leave: async () => {} };
+      return undefined;
     };
 
-    room = {
+    const room: Room = {
 
       id: roomId,
       note,
@@ -173,12 +199,22 @@ async function useRoom (roomId: string)
 
     rooms.set(roomId, room);
 
+    return room;
+
+}
+
+
+async function useRoom (roomId: string)
+{
+
+  const room = await getRoom(roomId);
+
+  if (!room)
+  {
+    return { room: undefined, checkAuth: () => false, save: async () => {}, leave: async () => {} };
   }
 
-
   const save = async () => {
-
-      if (!room) return;
 
       if (room.migrationFailed)
       {
@@ -224,23 +260,36 @@ async function useRoom (roomId: string)
   }
 
   const leave = async () => {
-    
-    const roomToCleanup = rooms.get(roomId);
-    if (!roomToCleanup) return;
+
+    // Already left, or replaced by a fresher room since.
+    if (rooms.get(roomId) !== room) return;
 
     console.log(`[Room ${roomId}] Cleaning up...`);
-    
-    if (roomToCleanup.saveInterval) 
+
+    // Detach first so that no new update can land in this doc after the save
+    // snapshot: concurrent callers will wait on `closing` then reload from DB.
+    rooms.delete(roomId);
+
+    if (room.saveInterval)
     {
-      clearInterval(roomToCleanup.saveInterval);
-      roomToCleanup.saveInterval = undefined; 
+      clearInterval(room.saveInterval);
+      room.saveInterval = undefined;
     }
 
-    await save();
+    const closing = (async () => {
+      await save();
+      room.awareness.destroy();
+      room.ydoc.destroy();
+    })();
 
-    roomToCleanup.awareness.destroy();
-    roomToCleanup.ydoc.destroy();
-    rooms.delete(roomId);
+    closingRooms.set(roomId, closing);
+
+    try {
+      await closing;
+    }
+    finally {
+      if (closingRooms.get(roomId) === closing) closingRooms.delete(roomId);
+    }
 
   };
 
