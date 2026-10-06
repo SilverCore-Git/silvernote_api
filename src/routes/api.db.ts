@@ -111,9 +111,16 @@ router.get('/notes/start/:start/end/:end', async (req: Request, res: Response) =
     });
 
     // identify gost notes
-    const ghostNotes: Note[] = db_res.notes.filter((note: Note) => 
-        note.title === '' && note.content === ''
-        || note.title === '' && note.content === '<p></p>'
+    // garde-fou : ne jamais supprimer une note créée il y a moins de 60s, pour éviter
+    // de supprimer une note tout juste créée avant que l'utilisateur ait tapé dedans
+    // (cf. silvernote_bugs/04-suppression-notes-fantomes-race.md)
+    const GHOST_NOTE_MIN_AGE_MS = 60_000;
+    const ghostNotes: Note[] = db_res.notes.filter((note: Note) =>
+        (
+            note.title === '' && note.content === ''
+            || note.title === '' && note.content === '<p></p>'
+        )
+        && (Date.now() - (note.created_at || 0)) >= GHOST_NOTE_MIN_AGE_MS
     );
 
     if (ghostNotes.length > 0) {
